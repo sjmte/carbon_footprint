@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F8FAFC" />
+  <meta name="description" content="하루 12번의 선택으로 알아보는 나의 탄소 발자국 (초등 4학년)" />
+  <title>오늘의 탄소 발자국 계산기</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%A3%3C/text%3E%3C/svg%3E" />
+
+  <!-- Font: Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (window.tailwind) {
+      tailwind.config = {
+        future: { hoverOnlyWhenSupported: true }, // 태블릿에서 터치 후 hover 효과가 남지 않게
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', '"Apple SD Gothic Neo"', '"Noto Sans KR"', '"Malgun Gothic"', 'sans-serif']
+            },
+            colors: {
+              mint: { 50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7', 400: '#34D399', 500: '#10B981', 600: '#059669', 700: '#047857', 800: '#065F46', 900: '#064E3B' }
+            }
+          }
+        }
+      };
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer components {
+      .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-mint-500 px-6 py-4 text-xl font-extrabold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-mint-600 hover:shadow-lg active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200 disabled:pointer-events-none disabled:opacity-40; }
+      .btn-soft { @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-lg font-bold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200; }
+      .card { @apply rounded-2xl bg-white p-6 shadow-sm sm:p-8; }
+      .section-title { @apply text-xl font-black text-slate-900 sm:text-2xl; }
+    }
+  </style>
+
+  <!-- Custom CSS: 기본 글꼴, 애니메이션 -->
+  <style>
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      font-size: 18px;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .safe-area {
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+    .tabular { font-variant-numeric: tabular-nums; }
+    summary { list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+
+    /* 화면 전환 */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .screen-enter { animation: fadeUp .3s ease-out both; }
+
+    /* 상황 카드 넘김 */
+    @keyframes slideInNext { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+    @keyframes slideInPrev { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+    .slide-in-next { animation: slideInNext .35s ease-out both; }
+    .slide-in-prev { animation: slideInPrev .35s ease-out both; }
+
+    /* 발자국 도장 */
+    @keyframes stamp {
+      0%   { transform: scale(1.9) rotate(-14deg); opacity: 0; }
+      45%  { transform: scale(.9) rotate(0deg); opacity: 1; }
+      70%  { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .stamp-anim { animation: stamp .55s cubic-bezier(.2, .8, .3, 1.2) both; }
+
+    /* 두구두구 */
+    @keyframes drum { from { transform: rotate(-9deg); } to { transform: rotate(9deg) translateY(-6px); } }
+    .drum { display: inline-block; animation: drum .18s ease-in-out infinite alternate; }
+
+    /* 스켈레톤 */
+    @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .skeleton {
+      background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 37%, #E2E8F0 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+
+    /* 시작 화면 지구 */
+    @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .floaty { animation: floaty 3.2s ease-in-out infinite; }
+
+    /* 결과 단계 배지 */
+    @keyframes popIn { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+    .pop-in { animation: popIn .5s cubic-bezier(.2, .9, .3, 1.3) .3s both; }
+
+    /* 게이지 표시 */
+    .gauge-marker { transform: translateX(-50%); }
+
+    /* 꽃가루 */
+    .confetti-piece { position: absolute; top: -48px; animation: confettiFall 2.3s cubic-bezier(.2, .7, .4, 1) forwards; }
+    @keyframes confettiFall {
+      0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+      100% { transform: translate(var(--drift, 0px), 110vh) rotate(var(--spin, 360deg)); opacity: .9; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
+  <div class="safe-area">
+
+    <!-- Header -->
+    <header class="safe-top sticky top-0 z-30 bg-slate-50/90 backdrop-blur-md">
+      <div class="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
+        <p class="flex items-center gap-2 text-base font-extrabold text-slate-700 sm:text-lg">
+          <span class="text-2xl" aria-hidden="true">👣</span>오늘의 탄소 발자국
+        </p>
+        <button id="btn-sound" type="button" aria-pressed="false" class="flex items-center gap-1.5 rounded-2xl bg-white px-3 py-2 text-base font-bold text-slate-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200">
+          <span id="sound-icon" aria-hidden="true">🔇</span><span id="sound-label">소리 끔</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="mx-auto max-w-2xl px-4 pb-20">
+
+      <!-- Screen 1: 시작 -->
+      <section id="screen-start" class="screen">
+        <div class="pt-6 text-center sm:pt-10">
+          <div class="floaty relative mx-auto flex h-40 w-40 items-center justify-center rounded-full bg-mint-100 shadow-sm sm:h-48 sm:w-48">
+            <span class="text-7xl sm:text-8xl" aria-hidden="true">🌏</span>
+            <span class="absolute -bottom-2 -right-2 flex h-16 w-16 items-center justify-center rounded-full bg-white text-4xl shadow-md" aria-hidden="true">👣</span>
+          </div>
+          <h1 class="mt-8 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">오늘의<br class="sm:hidden" /> 탄소 발자국 계산기</h1>
+          <p class="mt-3 text-lg text-slate-600">오늘 나의 선택은 지구에<br class="sm:hidden" /> 어떤 발자국을 남길까?</p>
+        </div>
+
+        <div class="card mt-8">
+          <label for="input-nickname" class="block text-lg font-bold text-slate-700">내 별명 <span class="text-base font-medium text-slate-400">(안 써도 돼요)</span></label>
+          <input id="input-nickname" type="text" maxlength="10" autocomplete="off" placeholder="예: 지구지킴이" class="mt-3 w-full rounded-2xl bg-slate-100 px-5 py-4 text-lg outline-none transition-all duration-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-mint-500" />
+          <button id="btn-start" type="button" class="btn-primary mt-5 w-full">오늘 하루 시작하기 🌅</button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+          <div class="rounded-2xl bg-white p-4 shadow-sm"><p class="text-3xl" aria-hidden="true">⏱️</p><p class="mt-1 text-base font-bold text-slate-600">7~10분</p></div>
+          <div class="rounded-2xl bg-white p-4 shadow-sm"><p class="text-3xl" aria-hidden="true">👆</p><p class="mt-1 text-base font-bold text-slate-600">선택 12번</p></div>
+          <div class="rounded-2xl bg-white p-4 shadow-sm"><p class="text-3xl" aria-hidden="true">🔒</p><p class="mt-1 text-base font-bold text-slate-600">저장 없음</p></div>
+        </div>
+
+        <button id="btn-teacher" type="button" class="mx-auto mt-6 flex items-center gap-1 rounded-2xl px-4 py-2 text-base font-semibold text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-mint-700 hover:shadow-sm active:scale-95">👩‍🏫 선생님께: 계산 근거 보기</button>
+      </section>
+
+      <!-- Screen 2: 안내 -->
+      <section id="screen-intro" class="screen hidden">
+        <div class="card mt-2">
+          <h2 class="text-2xl font-black text-slate-900 sm:text-3xl">탄소 발자국이 뭐예요?</h2>
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-2 text-4xl sm:gap-3 sm:text-5xl" aria-hidden="true">
+            <span>💡</span><span>🚿</span><span>🚗</span><span>🛍️</span>
+            <span class="px-1 text-2xl text-slate-300">➜</span><span>💨</span>
+            <span class="px-1 text-2xl text-slate-300">➜</span><span>👣</span>
+          </div>
+          <p class="mt-6 text-lg leading-relaxed text-slate-700">우리가 <b>전기, 물, 자동차, 물건</b>을 쓸 때마다 눈에 보이지 않는 <b>이산화탄소</b>가 나와요. 이걸 <b>무게(g)</b>로 나타낸 것이 바로 <b class="text-mint-700">탄소 발자국</b>이에요.</p>
+        </div>
+        <div class="mt-4 grid gap-3">
+          <div class="flex items-start gap-4 rounded-2xl bg-white p-5 shadow-sm"><span class="text-3xl" aria-hidden="true">✅</span><p class="text-lg leading-snug"><b>정답 맞히기가 아니에요.</b><br />평소의 나처럼 솔직하게 골라요.</p></div>
+          <div class="flex items-start gap-4 rounded-2xl bg-white p-5 shadow-sm"><span class="text-3xl" aria-hidden="true">👀</span><p class="text-lg leading-snug"><b>고를 때마다 탄소량을 잠깐 보여 줘요.</b><br />마지막에 오늘 하루를 모두 더해서 공개!</p></div>
+          <div id="intro-tts-tip" class="hidden items-start gap-4 rounded-2xl bg-white p-5 shadow-sm"><span class="text-3xl" aria-hidden="true">🔊</span><p class="text-lg leading-snug"><b>글이 어려우면 '읽어 주기'를 눌러요.</b><br />상황과 선택지를 소리로 들려줘요.</p></div>
+        </div>
+        <button id="btn-begin" type="button" class="btn-primary mt-6 w-full">알겠어요, 하루 시작! 🌅</button>
+      </section>
+
+      <!-- Screen 3: 하루 따라가기 -->
+      <section id="screen-play" class="screen hidden">
+        <div id="challenge-banner" class="mt-1 hidden items-center gap-3 rounded-2xl bg-amber-50 px-5 py-3 text-base font-bold text-amber-800 shadow-sm">
+          <span class="text-2xl" aria-hidden="true">🏆</span><span>도전 모드! 이번엔 탄소 발자국을 가장 작게 남겨 봐요.</span>
+        </div>
+
+        <div class="mt-3 rounded-2xl bg-white p-4 shadow-sm">
+          <div id="period-chips" class="grid grid-cols-4 gap-2 text-center"></div>
+          <div class="mt-3 flex items-center gap-3">
+            <div class="h-3 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div id="progress-bar" class="h-full rounded-full bg-mint-500 transition-all duration-500" style="width: 8%"></div>
+            </div>
+            <span id="progress-text" class="tabular text-base font-extrabold text-slate-600" aria-live="polite">1 / 12</span>
+          </div>
+        </div>
+
+        <article id="situation-card" class="relative mt-4 overflow-hidden rounded-2xl bg-white shadow-md">
+          <div id="sky" class="relative h-16 sm:h-20" style="background: linear-gradient(135deg, #FEF3C7 0%, #FCE7F3 100%); transition: background .6s ease;">
+            <span id="sky-sun" class="absolute top-1.5 text-3xl sm:text-4xl" style="left: 8%; transform: translateX(-50%); transition: left .7s ease-out;" aria-hidden="true">☀️</span>
+            <div class="absolute inset-x-0 bottom-0 flex items-end justify-around px-3 text-xl opacity-80 sm:text-2xl" aria-hidden="true">
+              <span>🏢</span><span>🌳</span><span>🏢</span><span>🏫</span><span>🌳</span><span>🏢</span><span>🏬</span>
+            </div>
+          </div>
+          <div class="p-6 sm:p-8">
+            <div class="flex items-center justify-between gap-3">
+              <span id="sit-time" class="tabular rounded-full bg-slate-100 px-3 py-1 text-base font-extrabold text-slate-600">07:30</span>
+              <button id="btn-tts" type="button" class="hidden rounded-2xl bg-slate-50 px-4 py-2 text-base font-bold text-slate-600 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200">🔊 읽어 주기</button>
+            </div>
+            <div class="mt-4 flex items-center gap-4">
+              <div id="sit-emoji" class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-mint-50 text-5xl sm:h-24 sm:w-24 sm:text-6xl" aria-hidden="true">🪥</div>
+              <div class="min-w-0">
+                <p id="sit-num" class="text-base font-extrabold text-mint-600">상황 1</p>
+                <h2 id="sit-title" class="text-2xl font-black text-slate-900 sm:text-3xl">양치 시간</h2>
+              </div>
+            </div>
+            <p id="sit-text" class="mt-5 text-xl leading-relaxed text-slate-700"></p>
+            <div id="choices" class="mt-6 grid gap-3" role="group" aria-label="선택지"></div>
+            <div id="feedback" class="mt-5 hidden">
+              <p id="feedback-text" class="text-center text-lg font-bold text-slate-700" aria-live="polite"></p>
+              <button id="btn-next" type="button" class="btn-primary relative mt-3 w-full overflow-hidden">
+                <span id="next-fill" class="pointer-events-none absolute inset-y-0 left-0 w-0 bg-white/25" aria-hidden="true"></span>
+                <span id="btn-next-label" class="relative">다음 상황 보기</span>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <button id="btn-prev" type="button" class="invisible shrink-0 rounded-2xl px-4 py-3 text-lg font-bold text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm active:scale-95">← 이전</button>
+          <p class="text-right text-sm text-slate-400">고르면 탄소량을 잠깐 보여 줘요<span class="hidden sm:inline">. 숫자 키로 고르고 Enter로 넘어가요</span></p>
+        </div>
+      </section>
+
+      <!-- Screen 4: 결과 공개 연출 -->
+      <section id="screen-reveal" class="screen hidden">
+        <div class="pt-14 text-center sm:pt-20">
+          <div class="drum text-8xl" aria-hidden="true">🥁</div>
+          <p class="mt-6 text-3xl font-black text-slate-900">두구두구…</p>
+          <p class="mt-2 text-xl text-slate-600">오늘 나의 탄소 발자국은?</p>
+          <div class="mx-auto mt-10 max-w-sm space-y-3" aria-hidden="true">
+            <div class="skeleton h-6 rounded-2xl"></div>
+            <div class="skeleton h-6 w-4/5 rounded-2xl"></div>
+            <div class="skeleton h-6 w-3/5 rounded-2xl"></div>
+          </div>
+          <p class="mt-4 text-base font-semibold text-slate-400">발자국을 세고 있어요</p>
+        </div>
+      </section>
+
+      <!-- Screen 5: 결과 -->
+      <section id="screen-result" class="screen hidden">
+        <div id="result-root" class="mt-2 grid gap-4"></div>
+      </section>
+    </main>
+
+    <!-- Modal: 내일의 다짐 -->
+    <div id="modal-pledge" class="modal fixed inset-0 z-50 hidden items-end justify-center bg-slate-900/40 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="pledge-title">
+      <div class="modal-panel max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-slate-50 p-6 shadow-xl sm:rounded-2xl">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="pledge-title" class="text-2xl font-black text-slate-900">📝 내일의 다짐</h2>
+          <button type="button" data-close="modal-pledge" class="rounded-2xl px-3 py-2 text-2xl text-slate-400 transition-all duration-200 hover:bg-white hover:text-slate-600 active:scale-95" aria-label="닫기">✕</button>
+        </div>
+        <div id="pledge-step1" class="mt-4">
+          <p class="text-lg text-slate-600">내일 바꿔 볼 행동을 <b>하나</b> 골라요.</p>
+          <div id="pledge-options" class="mt-4 grid gap-3"></div>
+          <label for="input-pledge" class="mt-6 block text-lg font-bold text-slate-700">나의 한 줄 다짐 <span class="text-base font-medium text-slate-400">(안 써도 돼요)</span></label>
+          <input id="input-pledge" type="text" maxlength="40" autocomplete="off" placeholder="예: 10분 일찍 일어나 걸어갈래요!" class="mt-2 w-full rounded-2xl bg-white px-5 py-4 text-lg shadow-sm outline-none focus:ring-2 focus:ring-mint-500" />
+          <button id="btn-make-card" type="button" class="btn-primary mt-5 w-full" disabled>다짐 카드 만들기 ✨</button>
+        </div>
+        <div id="pledge-step2" class="mt-4 hidden">
+          <div id="pledge-card"></div>
+          <button type="button" data-action="copy" class="btn-primary mt-4 w-full text-lg">📋 다짐까지 담아 결과 복사하기</button>
+          <p class="mt-2 text-center text-base text-slate-500">복사한 뒤 패들렛 글쓰기 칸에 붙여 넣어요. 화면을 캡처해서 올려도 좋아요.</p>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <button id="btn-pledge-back" type="button" class="btn-soft">다시 고르기</button>
+            <button type="button" data-close="modal-pledge" class="btn-soft">결과 보기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: 선생님 안내 -->
+    <div id="modal-teacher" class="modal fixed inset-0 z-50 hidden items-end justify-center bg-slate-900/40 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="teacher-title">
+      <div class="modal-panel max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-slate-50 p-6 shadow-xl sm:rounded-2xl sm:p-8">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="teacher-title" class="text-2xl font-black text-slate-900">👩‍🏫 선생님께</h2>
+          <button type="button" data-close="modal-teacher" class="rounded-2xl px-3 py-2 text-2xl text-slate-400 transition-all duration-200 hover:bg-white hover:text-slate-600 active:scale-95" aria-label="닫기">✕</button>
+        </div>
+        <div class="mt-4 grid gap-4 text-base leading-relaxed text-slate-700">
+          <section class="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-black text-slate-900">이 앱의 숫자</h3>
+            <p class="mt-2">하루 중 학생이 고를 수 있는 12개의 순간만 더한 교육용 어림값이에요. 가장 적게 고르면 <b id="t-min">300g</b>, 가장 많이 고르면 <b id="t-max">2,446g</b>이 나와요. 2023년 한국의 1인당 이산화탄소 배출량은 약 11톤(하루 약 30kg)인데, 이건 나라 전체 배출을 인구로 나눈 값이에요. 개인의 실천과 사회 전체의 변화를 함께 이야기해 보세요.</p>
+          </section>
+          <section class="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-black text-slate-900">기본 계수와 출처</h3>
+            <ul class="mt-2 grid gap-2">
+              <li>⚡ <b>전기 1kWh ≈ 417g</b>: 2023년 국가 전력배출계수 0.4173tCO₂eq/MWh (2025년 12월 공표)</li>
+              <li>🚰 <b>양치</b>: 물을 흘려보내며 30초 헹구면 약 6L, 컵을 쓰면 약 6분의 1</li>
+              <li>🚿 <b>샤워 1분 ≈ 60g</b>: 분당 약 9L의 물을 15℃에서 40℃로 데우는 가스보일러 기준 (물 공급 포함)</li>
+              <li>📄 <b>종이</b>: A4 1장을 만들 때 약 2.88g (인쇄까지 하면 약 24.48g)</li>
+              <li>🍱 <b>음식물</b>: 처리할 때 1톤당 이산화탄소 338kg + 버린 음식을 만들 때 나온 몫 (1g당 약 2g, 추정)</li>
+              <li>🚗 <b>승용차 1km ≈ 200g</b>: 평균 휘발유 승용차 약 165g/km(영국 기준 환산계수)에 도심 단거리 주행을 감안</li>
+              <li>🌳 <b>상수리나무</b>: 30년생 1그루가 1년에 약 14.4kg 흡수 (국립산림과학원), 하루로 나누면 약 40g</li>
+              <li>🎈 <b>풍선</b>: 25℃에서 이산화탄소 1g ≈ 0.56L이므로 지름 30cm 풍선(약 14L)에 약 25g</li>
+            </ul>
+          </section>
+          <section class="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-black text-slate-900">어림값 (학교 실정에 맞게 고쳐 쓰세요)</h3>
+            <ul class="mt-2 grid gap-1">
+              <li>수돗물 1L당 0.4g</li>
+              <li>방 LED등 40W, 교실 조명 500W, 셋톱박스 대기전력 12W</li>
+              <li>태블릿 10W, TV 120W, 영상 전송 1시간 약 10g</li>
+              <li>학원 승합차: 1km 250g × 5km ÷ 10명</li>
+              <li>페트병 음료 1병 80g</li>
+              <li>페트병을 일반 쓰레기로 버릴 때 50g (소각 약 34g + 새 플라스틱 약 20g)</li>
+            </ul>
+          </section>
+          <section class="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-black text-slate-900">숫자, 문장, 설정 고치는 법</h3>
+            <p class="mt-2">HTML 파일 아래쪽 &lt;script&gt;의 <b>SITUATIONS</b> 배열에서 co2(탄소량 g), label(선택지), text(상황 문장)를 고치면 결과가 자동으로 다시 계산돼요. 발자국 단계 기준은 <b>LEVELS</b>에 있어요. <b>FACTORS</b>에서는 아래 설정을 바꿀 수 있어요.</p>
+            <ul class="mt-2 grid gap-1">
+              <li><b>padletUrl</b>: 우리 반 패들렛 주소를 넣으면 결과 화면에 '우리 반 패들렛 열기' 버튼이 생겨요.</li>
+              <li><b>shuffleChoices</b>: true면 선택지 순서를 상황마다 무작위로 섞어요.</li>
+              <li><b>feedbackSeconds</b>: 고른 뒤 탄소량을 보여 주는 시간(초)이에요. 0으로 하면 '다음 상황 보기'를 눌러야 넘어가요.</li>
+              <li><b>defaultStudents</b>: 우리 반 학생 수 기본값이에요.</li>
+            </ul>
+          </section>
+          <section class="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-black text-slate-900">개인정보</h3>
+            <p class="mt-2">별명과 선택은 어디에도 저장되지 않아요. 새로고침하면 처음부터 시작해요.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- 알림: 복사 완료 등 -->
+    <div id="toast" class="pointer-events-none fixed inset-x-0 z-[60] flex translate-y-4 justify-center px-4 opacity-0 transition-all duration-300" style="bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));" role="status" aria-live="polite">
+      <div id="toast-text" class="max-w-md rounded-2xl bg-slate-900 px-5 py-3 text-center text-base font-bold text-white shadow-lg"></div>
+    </div>
+
+    <!-- 꽃가루 레이어 -->
+    <div id="confetti" class="pointer-events-none fixed inset-0 z-40 overflow-hidden" aria-hidden="true"></div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    /* =========================================================
+     * 오늘의 탄소 발자국 계산기
+     * ---------------------------------------------------------
+     * [선생님 수정 영역]
+     *  - FACTORS    : 패들렛 주소, 선택지 섞기, 탄소량 보여 주는 시간, 환산값, 학생 수
+     *  - LEVELS     : 발자국 단계 기준 (총량이 max보다 작으면 그 단계)
+     *  - SITUATIONS : 상황 문장, 선택지, 탄소량(co2, g), 물 사용량(water, L)
+     *  숫자를 고치면 결과 계산과 게이지가 자동으로 따라와요.
+     * ========================================================= */
+
+    const FACTORS = {
+      padletUrl: '',        // 우리 반 패들렛 주소 (예: 'https://padlet.com/...'), 넣으면 '패들렛 열기' 버튼이 생겨요
+      shuffleChoices: true, // 선택지 순서를 상황마다 무작위로 섞기
+      feedbackSeconds: 3.5, // 고른 뒤 탄소량을 보여 주는 시간(초), 0이면 '다음 상황 보기'를 눌러야 넘어가요
+      balloonG: 25,        // 지름 30cm 풍선 1개에 담기는 이산화탄소(g)
+      treeDailyG: 40,      // 상수리나무 1그루가 하루에 흡수하는 양(g) ≈ 14.4kg ÷ 365
+      treeYearKg: 14.4,    // 상수리나무(30년생) 1그루가 1년에 흡수하는 양(kg)
+      carGPerKm: 200,      // 도심 승용차 1km 주행(g)
+      defaultStudents: 25, // 우리 반 학생 수 기본값
+      maxStudents: 40
+    };
+
+    const PERIODS = {
+      morning: { name: '아침',   emoji: '🌅', icon: '☀️', sky: 'linear-gradient(135deg, #FEF3C7 0%, #FCE7F3 100%)' },
+      school:  { name: '학교',   emoji: '🏫', icon: '☀️', sky: 'linear-gradient(135deg, #E0F2FE 0%, #D1FAE5 100%)' },
+      after:   { name: '방과후', emoji: '🏃', icon: '☀️', sky: 'linear-gradient(135deg, #FFEDD5 0%, #FEF9C3 100%)' },
+      evening: { name: '저녁',   emoji: '🌙', icon: '🌙', sky: 'linear-gradient(135deg, #A5B4FC 0%, #C4B5FD 100%)' }
+    };
+    const PERIOD_ORDER = ['morning', 'school', 'after', 'evening'];
+
+    const CATEGORIES = {
+      water:     { name: '물·온수', emoji: '💧', color: '#38BDF8' },
+      electric:  { name: '전기',    emoji: '⚡', color: '#FBBF24' },
+      transport: { name: '교통',    emoji: '🚗', color: '#FB923C' },
+      resource:  { name: '자원',    emoji: '♻️', color: '#34D399' },
+      food:      { name: '음식',    emoji: '🍚', color: '#A78BFA' }
+    };
+
+    const LEVELS = [
+      { max: 600,      name: '새싹 발자국', icon: '🌱', earth: '😊', msg: '지구가 활짝 웃어요! 오늘 하루 정말 멋졌어요.', bar: '#6EE7B7', bg: 'bg-mint-50', text: 'text-mint-700' },
+      { max: 1100,     name: '산책 발자국', icon: '👟', earth: '🙂', msg: '지구가 미소 지어요. 몇 가지만 바꾸면 새싹 발자국!', bar: '#BEF264', bg: 'bg-lime-50', text: 'text-lime-700' },
+      { max: 1700,     name: '쿵쿵 발자국', icon: '🥾', earth: '😓', msg: '지구가 조금 더워해요. 큰 발자국 하나만 줄여 볼까요?', bar: '#FCD34D', bg: 'bg-amber-50', text: 'text-amber-700' },
+      { max: Infinity, name: '거인 발자국', icon: '🦶', earth: '🥵', msg: '지구가 땀을 뻘뻘 흘려요. 그만큼 바꿀 수 있는 것도 많다는 뜻이에요!', bar: '#FDBA74', bg: 'bg-orange-50', text: 'text-orange-700' }
+    ];
+
+    const SITUATIONS = [
+      {
+        id: 1, time: '07:30', period: 'morning', category: 'water', emoji: '🪥',
+        title: '양치 시간',
+        text: '아침 양치를 해요. 입을 헹굴 때 어떻게 할까요?',
+        info: '컵 하나로 물 5L(생수병 10개)를 아낄 수 있어요.',
+        choices: [
+          { emoji: '🥛', label: '컵에 물을 받아 헹군다', co2: 0.4, water: 1, basis: '물 1L × 0.4g = 약 0.4g' },
+          { emoji: '🚰', label: '물을 틀어 놓고 헹군다', co2: 2.4, water: 6, basis: '30초 동안 흘려보낸 물 약 6L × 0.4g = 약 2.4g' }
+        ]
+      },
+      {
+        id: 2, time: '08:10', period: 'morning', category: 'electric', emoji: '💡',
+        title: '집을 나서기 전',
+        text: '학교 갈 준비 끝! 그런데 내 방 불이 켜져 있어요.',
+        info: '켜 둔 불은 내가 돌아올 때까지 7시간 동안 빈방을 비춰요.',
+        choices: [
+          { emoji: '💡', label: '불을 끄고 나간다', co2: 0, basis: '불을 끄면 전기를 쓰지 않아요 → 0g' },
+          { emoji: '💨', label: '급해서 그냥 나간다', co2: 120, basis: 'LED 방등 40W × 7시간 = 0.28kWh, 0.28kWh × 417g ≈ 120g' }
+        ]
+      },
+      {
+        id: 3, time: '08:20', period: 'morning', category: 'transport', emoji: '🛗',
+        title: '시간이 빠듯해!',
+        text: '엘리베이터를 기다리다 시간이 빠듯해졌어요. 학교까지는 걸어서 10분(약 700m)!',
+        info: '부모님은 나를 내려 주고 다시 돌아가야 해서, 차가 달리는 거리가 2배가 돼요.',
+        choices: [
+          { emoji: '🏃', label: '서둘러 걸어간다', co2: 0, basis: '걸으면 이산화탄소가 나오지 않아요 → 0g' },
+          { emoji: '🚗', label: '부모님께 차로 데려다 달라고 한다', co2: 280, basis: '700m를 데려다주고 돌아오면 1.4km, 1.4km × 200g = 280g' }
+        ]
+      },
+      {
+        id: 4, time: '10:30', period: 'school', category: 'electric', emoji: '🔬',
+        title: '이동 수업',
+        text: "과학실로 이동 수업을 가요. 오늘 나는 우리 반 '전기 지킴이'예요!",
+        info: '아무도 없는 교실에 40분 동안 불이 켜져 있었어요.',
+        choices: [
+          { emoji: '💡', label: '교실 불을 끄고 간다', co2: 0, basis: '불을 끄면 → 0g' },
+          { emoji: '😅', label: '깜빡하고 그냥 간다', co2: 140, basis: '교실 조명 약 500W × 40분 ≈ 0.33kWh, 0.33kWh × 417g ≈ 140g' }
+        ]
+      },
+      {
+        id: 5, time: '11:20', period: 'school', category: 'resource', emoji: '🎨',
+        title: '미술 시간',
+        text: '미술 시간이에요. 밑그림을 먼저 연습해 보고 싶어요.',
+        info: '이면지는 종이에게 두 번째 기회를 줘요.',
+        choices: [
+          { emoji: '📄', label: '이면지에 연습한다', co2: 0, basis: '이미 쓴 종이를 한 번 더 쓰니 새로 생기는 탄소는 0g' },
+          { emoji: '📃', label: '새 종이 5장에 연습하고 버린다', co2: 14, basis: 'A4 1장을 만들 때 약 2.88g × 5장 ≈ 14g' }
+        ]
+      },
+      {
+        id: 6, time: '12:30', period: 'school', category: 'food', emoji: '🍱',
+        title: '급식 시간',
+        text: '맛있는 급식 시간! 그런데 좋아하지 않는 반찬도 있어요.',
+        info: '버린 음식도 농사짓고, 옮기고, 요리할 때 이미 탄소를 만들었어요. 버린 뒤 처리할 때 또 생기고요.',
+        choices: [
+          { emoji: '🙋', label: '먹을 만큼만 받아 다 먹는다', co2: 0, basis: '버리는 음식이 없어요 → 0g' },
+          { emoji: '🍽️', label: '조금 남긴다', sub: '반찬 두세 숟가락 정도', co2: 120, basis: '버린 음식 1g당 약 2.3g(만들 때 약 2g + 처리할 때 약 0.34g) × 50g ≈ 120g' },
+          { emoji: '🗑️', label: '많이 받아 절반을 남긴다', sub: '식판의 절반 정도', co2: 350, basis: '버린 음식 1g당 약 2.3g × 150g ≈ 350g' }
+        ]
+      },
+      {
+        id: 7, time: '14:00', period: 'after', category: 'transport', emoji: '📚',
+        title: '학원 가는 길',
+        text: '수업 끝! 이제 학원에 가요. 학원까지는 약 1km, 걸어서 15분 거리예요.',
+        info: '학원 차량은 여러 명이 나눠 타서 1명 몫이 줄어요. 걸으면 0g!',
+        choices: [
+          { emoji: '🚶', label: '친구와 걸어간다', co2: 0, basis: '걸으면 → 0g' },
+          { emoji: '🚐', label: '학원 차량을 탄다', co2: 125, basis: '학원 승합차 1km 약 250g × 5km를 10명이 나눠 타면 1명당 125g' },
+          { emoji: '🚗', label: '부모님 차를 탄다', co2: 400, basis: '1km를 데려다주고 돌아오면 2km, 2km × 200g = 400g' }
+        ]
+      },
+      {
+        id: 8, time: '16:00', period: 'after', category: 'resource', emoji: '🥤',
+        title: '목이 말라요',
+        text: '학원이 끝나고 목이 말라요. 바로 앞에 편의점이 있어요.',
+        info: '음료 한 병은 병을 만들고, 옮기고, 차갑게 보관하는 동안 탄소가 나와요.',
+        choices: [
+          { emoji: '💧', label: '챙겨 온 내 물병의 물을 마신다', co2: 0, basis: '집에서 챙긴 물 → 0g' },
+          { emoji: '🧃', label: '편의점에서 페트병 음료를 사 마신다', co2: 80, basis: '병 만들기, 운반, 냉장 보관을 합쳐 약 80g (어림값)' }
+        ]
+      },
+      {
+        id: 9, time: '17:00', period: 'after', category: 'electric', emoji: '🕔',
+        title: '자유 시간',
+        text: '저녁 먹기 전까지 1시간 자유 시간이 생겼어요!',
+        info: '화면이 클수록 전기를 더 많이 써요. 놀이터는 0g에 건강까지!',
+        choices: [
+          { emoji: '🤸', label: '놀이터에서 친구들과 논다', co2: 0, basis: '전기를 쓰지 않아요 → 0g' },
+          { emoji: '📱', label: '집에서 태블릿으로 영상을 본다', co2: 15, basis: '태블릿 약 10W × 1시간 ≈ 4g + 영상 전송 약 10g ≈ 15g' },
+          { emoji: '📺', label: '거실 TV로 영상을 본다', co2: 60, basis: 'TV 약 120W × 1시간 ≈ 50g + 영상 전송 약 10g ≈ 60g' }
+        ]
+      },
+      {
+        id: 10, time: '19:30', period: 'evening', category: 'resource', emoji: '♻️',
+        title: '분리배출',
+        text: '저녁을 먹고 나니 빈 페트병이 하나 생겼어요.',
+        textIf: { id: 8, choice: 1, text: '아까 편의점에서 산 음료를 다 마셨어요. 빈 페트병이 남았네요.' },
+        info: '일반 쓰레기는 태워서 처리하는 경우가 많아요. 분리배출하면 새 병이나 옷으로 다시 태어나요.',
+        choices: [
+          { emoji: '♻️', label: '헹구고 라벨을 떼서 분리배출한다', co2: 0, basis: '재활용되면 새 플라스틱을 덜 만들어요 → 0g' },
+          { emoji: '🗑️', label: '귀찮아서 일반 쓰레기에 버린다', co2: 50, basis: '15g짜리 페트병이 탈 때 약 34g + 새 플라스틱을 만드는 몫 약 20g ≈ 50g' }
+        ]
+      },
+      {
+        id: 11, time: '20:30', period: 'evening', category: 'water', emoji: '🚿',
+        title: '샤워 시간',
+        text: '하루를 마치고 따뜻한 물로 샤워해요.',
+        info: '따뜻한 물은 보일러가 가스를 태워 만들어요. 1분만 줄여도 약 60g!',
+        choices: [
+          { emoji: '⏱️', label: '후다닥 5분 만에 끝낸다', co2: 300, water: 45, basis: '따뜻한 물 1분에 약 60g × 5분 = 300g (분당 9L, 가스보일러 기준)' },
+          { emoji: '🚿', label: '보통 10분 동안 한다', co2: 600, water: 90, basis: '1분에 약 60g × 10분 = 600g' },
+          { emoji: '🎤', label: '노래 부르며 15분 동안 한다', co2: 900, water: 135, basis: '1분에 약 60g × 15분 = 900g' }
+        ]
+      },
+      {
+        id: 12, time: '21:30', period: 'evening', category: 'electric', emoji: '🌙',
+        title: '잠자기 전',
+        text: '이제 잘 시간! 거실 TV 셋톱박스와 내 충전기가 꽂혀 있어요.',
+        info: '꺼진 것처럼 보여도 셋톱박스는 밤새 전기를 조금씩 써요.',
+        choices: [
+          { emoji: '🔌', label: '멀티탭을 끄고 충전기를 뽑는다', co2: 0, basis: '전기가 흐르지 않아요 → 0g' },
+          { emoji: '😴', label: '그냥 잔다', co2: 50, basis: '셋톱박스 등 대기전력 약 12W × 10시간 = 0.12kWh, 0.12kWh × 417g ≈ 50g' }
+        ]
+      }
+    ];
+
+    /* ================= 여기부터는 앱 동작 코드 ================= */
+
+    // ----- 상태 -----
+    const emptyAnswers = () => new Array(SITUATIONS.length).fill(null);
+    const state = {
+      nickname: '',
+      index: 0,
+      answers: emptyAnswers(),
+      round: 1,          // 1: 평소의 나, 2: 도전 모드
+      round1: null,      // 1회차 결과 (다짐 카드·비교에 사용)
+      lastResult: null,
+      students: FACTORS.defaultStudents,
+      soundOn: false,    // 교실 소음을 생각해 기본은 꺼짐
+      busy: false,
+      pledgeOptions: [],
+      pledgeSelected: null,
+      pledge: null,        // 만든 다짐 (복사 글에 넣음)
+      order: [],           // 상황별 선택지 보여 주는 순서
+      feedbackTimer: null
+    };
+
+    // ----- 도우미 -----
+    const $ = (sel) => document.querySelector(sel);
+    const h = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const fmtNum = (n) => Math.round(n).toLocaleString('ko-KR');
+    const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const wait = (ms) => (reduceMotion ? Math.min(ms, 200) : ms);
+
+    function fmtG(g) {
+      const v = Math.round(g * 10) / 10;                     // 소수 첫째 자리까지
+      if (v <= 0) return '0g';
+      if (v < 10 && v % 1 !== 0) return v.toFixed(1) + 'g';  // 0.4g, 2.4g처럼 작은 값은 소수로
+      return fmtNum(v) + 'g';
+    }
+    function fmtBig(kg) {
+      if (kg >= 1000) return `${(kg / 1000).toFixed(1)}톤 (${fmtNum(kg)}kg)`;
+      return `${fmtNum(kg)}kg`;
+    }
+    function hasBatchim(word) {
+      const str = String(word).trim();
+      if (!str) return false;
+      const code = str.charCodeAt(str.length - 1);
+      if (code < 0xac00 || code > 0xd7a3) return false;
+      return (code - 0xac00) % 28 !== 0;
+    }
+    const josa = (word, withBatchim, withoutBatchim) => word + (hasBatchim(word) ? withBatchim : withoutBatchim);
+    const levelOf = (total) => LEVELS.find((l) => total < l.max) || LEVELS[LEVELS.length - 1];
+    const minChoice = (s) => s.choices.reduce((a, b) => (b.co2 < a.co2 ? b : a));
+    const maxChoice = (s) => s.choices.reduce((a, b) => (b.co2 > a.co2 ? b : a));
+    const MIN_TOTAL = SITUATIONS.reduce((sum, s) => sum + minChoice(s).co2, 0);
+    const MAX_TOTAL = SITUATIONS.reduce((sum, s) => sum + maxChoice(s).co2, 0);
+
+    // 선택지 순서 섞기 (Fisher-Yates)
+    function shuffledIndexes(n) {
+      const a = Array.from({ length: n }, (_, i) => i);
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    const makeOrder = () => SITUATIONS.map((s) => (FACTORS.shuffleChoices ? shuffledIndexes(s.choices.length) : s.choices.map((_, i) => i)));
+
+    // ----- 효과음 (Web Audio, 기본 꺼짐) -----
+    let audioCtx = null;
+    function ensureAudio() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function tone(freq, delay, dur, type = 'sine', vol = 0.12) {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const t0 = ctx.currentTime + delay;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    }
+    function sfx(name) {
+      if (!state.soundOn) return;
+      try {
+        if (name === 'pop') { tone(620, 0, 0.12, 'triangle'); tone(880, 0.07, 0.14, 'triangle'); }
+        if (name === 'drum') { for (let i = 0; i < 10; i++) tone(i % 2 ? 150 : 115, i * 0.15, 0.09, 'square', 0.05); }
+        if (name === 'tada') { tone(523, 0, 0.22); tone(659, 0.13, 0.22); tone(784, 0.26, 0.45); }
+      } catch (e) { /* 소리가 나지 않아도 앱은 계속 동작 */ }
+    }
+    function updateSoundBtn() {
+      $('#sound-icon').textContent = state.soundOn ? '🔊' : '🔇';
+      $('#sound-label').textContent = state.soundOn ? '소리 켬' : '소리 끔';
+      $('#btn-sound').setAttribute('aria-pressed', String(state.soundOn));
+    }
+
+    // ----- 읽어 주기 (Web Speech API) -----
+    const ttsSupported = 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
+    function speak(text) {
+      if (!ttsSupported) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR';
+      u.rate = 0.95;
+      const ko = window.speechSynthesis.getVoices().find((v) => (v.lang || '').toLowerCase().startsWith('ko'));
+      if (ko) u.voice = ko;
+      window.speechSynthesis.speak(u);
+    }
+    function stopSpeak() { if (ttsSupported) window.speechSynthesis.cancel(); }
+    function timeToSpeech(t) {
+      const [hh, mm] = t.split(':').map(Number);
+      const ampm = hh < 12 ? '오전' : '오후';
+      const h12 = hh % 12 === 0 ? 12 : hh % 12;
+      return `${ampm} ${h12}시${mm ? ` ${mm}분` : ''}`;
+    }
+
+    // ----- 화면 전환 -----
+    const SCREENS = ['start', 'intro', 'play', 'reveal', 'result'];
+    function showScreen(name) {
+      stopSpeak();
+      SCREENS.forEach((key) => {
+        const el = document.getElementById('screen-' + key);
+        const on = key === name;
+        el.classList.toggle('hidden', !on);
+        if (on) {
+          el.classList.remove('screen-enter');
+          void el.offsetWidth;
+          el.classList.add('screen-enter');
+        }
+      });
+      window.scrollTo(0, 0);
+    }
+
+    // ----- 하루 따라가기 -----
+    function situationText(s) {
+      if (s.textIf) {
+        const dep = SITUATIONS.findIndex((x) => x.id === s.textIf.id);
+        if (dep > -1 && state.answers[dep] === s.textIf.choice) return s.textIf.text;
+      }
+      return s.text;
+    }
+
+    function renderPeriodChips(period) {
+      const cur = PERIOD_ORDER.indexOf(period);
+      $('#period-chips').innerHTML = PERIOD_ORDER.map((key, i) => {
+        const p = PERIODS[key];
+        const cls = i < cur ? 'bg-mint-50 text-mint-700' : i === cur ? 'bg-mint-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400';
+        return `<div class="rounded-2xl px-1 py-2 transition-colors duration-300 ${cls}" ${i === cur ? 'aria-current="step"' : ''}>
+          <div class="text-xl leading-none" aria-hidden="true">${i < cur ? '✓' : p.emoji}</div>
+          <div class="mt-1 text-sm font-extrabold">${h(p.name)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function choiceButtonHtml(c, dataIdx, pos, selected) {
+      return `<button type="button" data-idx="${dataIdx}" aria-pressed="${selected}" class="group flex min-h-[76px] w-full items-center gap-3 rounded-2xl px-4 py-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-mint-50 hover:shadow-md active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200 disabled:pointer-events-none sm:gap-4 sm:px-5 ${selected ? 'bg-mint-50 ring-2 ring-mint-500' : 'bg-slate-50'}">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-base font-black text-mint-600 shadow-sm">${pos + 1}</span>
+        <span class="shrink-0 text-3xl sm:text-4xl" aria-hidden="true">${h(c.emoji)}</span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-lg font-bold leading-snug text-slate-800 sm:text-xl">${h(c.label)}</span>
+          ${c.sub ? `<span class="mt-0.5 block text-base text-slate-500">${h(c.sub)}</span>` : ''}
+          <span data-slot="badge">${selected ? '<span class="mt-1 inline-block rounded-full bg-slate-400 px-2 py-0.5 text-xs font-bold text-white">아까 고른 답</span>' : ''}</span>
+        </span>
+        <span data-slot="value" class="hidden shrink-0"></span>
+      </button>`;
+    }
+
+    function renderSituation(direction) {
+      const total = SITUATIONS.length;
+      const s = SITUATIONS[state.index];
+      const p = PERIODS[s.period];
+
+      renderPeriodChips(s.period);
+      $('#progress-bar').style.width = ((state.index + 1) / total) * 100 + '%';
+      $('#progress-text').textContent = `${state.index + 1} / ${total}`;
+
+      $('#sky').style.background = p.sky;
+      const sun = $('#sky-sun');
+      sun.textContent = p.icon;
+      sun.style.left = 8 + (state.index / Math.max(1, total - 1)) * 84 + '%';
+
+      $('#sit-time').textContent = s.time;
+      $('#sit-emoji').textContent = s.emoji;
+      $('#sit-num').textContent = `상황 ${state.index + 1}`;
+      $('#sit-title').textContent = s.title;
+      $('#sit-text').textContent = situationText(s);
+      const order = state.order[state.index] || s.choices.map((_, i) => i);
+      $('#choices').innerHTML = order.map((dataIdx, pos) => choiceButtonHtml(s.choices[dataIdx], dataIdx, pos, state.answers[state.index] === dataIdx)).join('');
+      hideFeedback();
+
+      $('#btn-prev').classList.toggle('invisible', state.index === 0);
+
+      const card = $('#situation-card');
+      card.classList.remove('slide-in-next', 'slide-in-prev');
+      void card.offsetWidth;
+      card.classList.add(direction === 'prev' ? 'slide-in-prev' : 'slide-in-next');
+      stopSpeak();
+    }
+
+    function choose(dataIdx) {
+      if (state.busy) return;
+      const s = SITUATIONS[state.index];
+      if (!s || dataIdx < 0 || dataIdx >= s.choices.length) return;
+      state.busy = true;
+      state.answers[state.index] = dataIdx;
+      sfx('pop');
+      stopSpeak();
+      showFeedback(s, dataIdx);
+    }
+
+    // 고른 뒤: 고른 것과 고르지 않은 것의 탄소량을 잠깐 보여 주기
+    function showFeedback(s, dataIdx) {
+      const minCo2 = minChoice(s).co2;
+      const chosen = s.choices[dataIdx];
+      $('#choices').querySelectorAll('button[data-idx]').forEach((b) => {
+        const idx = Number(b.dataset.idx);
+        const c = s.choices[idx];
+        const isChosen = idx === dataIdx;
+        const isMin = c.co2 === minCo2;
+        b.disabled = true;
+        b.setAttribute('aria-pressed', String(isChosen));
+        b.classList.remove('bg-slate-50', 'bg-mint-50', 'ring-2', 'ring-mint-500');
+        b.classList.add(isChosen ? 'bg-mint-50' : 'bg-slate-50');
+        if (isChosen) b.classList.add('ring-2', 'ring-mint-500');
+        const value = b.querySelector('[data-slot="value"]');
+        value.innerHTML = `<span class="tabular inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-base font-black ${isMin ? 'bg-mint-100 text-mint-700' : 'bg-amber-100 text-amber-700'}">${isMin ? '🌱 ' : ''}${fmtG(c.co2)}</span>`;
+        value.classList.remove('hidden');
+        b.querySelector('[data-slot="badge"]').innerHTML = isChosen
+          ? '<span class="stamp-anim mt-1 inline-flex items-center gap-1 rounded-full bg-mint-500 px-2 py-0.5 text-xs font-bold text-white">👣 내 선택</span>'
+          : '';
+      });
+
+      const diff = chosen.co2 - minCo2;
+      $('#feedback-text').innerHTML = diff <= 0
+        ? '👍 가장 적은 선택이에요!'
+        : `가장 적은 선택보다 <b class="text-amber-700">${fmtG(diff)}</b> 더 나와요`;
+      $('#btn-next-label').textContent = state.index === SITUATIONS.length - 1 ? '결과 보러 가기' : '다음 상황 보기';
+      const fb = $('#feedback');
+      fb.classList.remove('hidden');
+      $('#btn-prev').classList.add('invisible');
+
+      const fill = $('#next-fill');
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      clearTimeout(state.feedbackTimer);
+      const sec = Number(FACTORS.feedbackSeconds) || 0;
+      if (sec > 0) {
+        void fill.offsetWidth;
+        fill.style.transition = `width ${sec}s linear`;
+        fill.style.width = '100%';
+        state.feedbackTimer = setTimeout(goNext, sec * 1000);
+      }
+      $('#btn-next').focus({ preventScroll: true });
+      fb.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+    }
+
+    function hideFeedback() {
+      clearTimeout(state.feedbackTimer);
+      state.feedbackTimer = null;
+      $('#feedback').classList.add('hidden');
+      const fill = $('#next-fill');
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+    }
+
+    function goNext() {
+      if (!state.busy) return;
+      hideFeedback();
+      state.busy = false;
+      if (state.index < SITUATIONS.length - 1) {
+        state.index += 1;
+        renderSituation('next');
+        window.scrollTo(0, 0);
+      } else {
+        startReveal();
+      }
+    }
+
+    function goPrev() {
+      if (state.busy || state.index === 0) return;
+      state.index -= 1;
+      renderSituation('prev');
+    }
+
+    function beginRound(round) {
+      clearTimeout(state.feedbackTimer);
+      state.round = round;
+      state.index = 0;
+      state.answers = emptyAnswers();
+      state.order = makeOrder();
+      state.busy = false;
+      const banner = $('#challenge-banner');
+      banner.classList.toggle('hidden', round !== 2);
+      banner.classList.toggle('flex', round === 2);
+      showScreen('play');
+      renderSituation('next');
+    }
+
+    // ----- 결과 계산 -----
+    function computeResult(answers) {
+      const items = SITUATIONS.map((s, idx) => {
+        const best = minChoice(s);
+        const choice = s.choices[answers[idx]] || best;
+        return { s, idx, choice, best, diff: choice.co2 - best.co2 };
+      });
+      const total = items.reduce((sum, it) => sum + it.choice.co2, 0);
+      const level = levelOf(total);
+      const ranked = items.filter((it) => it.diff > 0).sort((a, b) => b.diff - a.diff);
+      const byCat = {};
+      Object.keys(CATEGORIES).forEach((k) => { byCat[k] = 0; });
+      items.forEach((it) => { byCat[it.s.category] = (byCat[it.s.category] || 0) + it.choice.co2; });
+      return {
+        items,
+        total,
+        minTotal: MIN_TOTAL,
+        maxTotal: MAX_TOTAL,
+        level,
+        levelIdx: LEVELS.indexOf(level),
+        top3: ranked.slice(0, 3),
+        bestOne: ranked[0] || null,
+        byCat,
+        waterUsed: items.reduce((sum, it) => sum + (it.choice.water || 0), 0),
+        waterMin: items.reduce((sum, it) => sum + (it.best.water || 0), 0)
+      };
+    }
+
+    function startReveal() {
+      showScreen('reveal');
+      sfx('drum');
+      setTimeout(() => {
+        const r = computeResult(state.answers);
+        state.lastResult = r;
+        if (state.round === 1) state.round1 = r;
+        renderResult(r);
+        showScreen('result');
+        animateCount($('#hero-total'), r.total);
+        sfx('tada');
+        const improved = state.round === 2 && state.round1 && r.total < state.round1.total;
+        if (r.levelIdx <= 1 || improved) setTimeout(() => burstConfetti(), wait(400));
+      }, wait(1700));
+    }
+
+    function animateCount(el, target) {
+      if (!el) return;
+      if (reduceMotion || !window.requestAnimationFrame) { el.textContent = fmtNum(target); return; }
+      const duration = 1400;
+      const start = performance.now();
+      const frame = (now) => {
+        const t = Math.min(1, Math.max(0, (now - start) / duration));
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = fmtNum(target * eased);
+        if (t < 1) requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    }
+
+    // ----- 결과 화면 조각 -----
+    function gaugeHtml(r) {
+      const range = Math.max(1, r.maxTotal - r.minTotal);
+      const pos = clamp((r.total - r.minTotal) / range, 0, 1);
+      let from = r.minTotal;
+      const segs = LEVELS.map((l) => {
+        const to = Math.min(l.max, r.maxTotal);
+        const w = (Math.max(0, to - from) / range) * 100;
+        from = Math.max(from, to);
+        if (w <= 0) return '';
+        return `<div class="flex h-full items-center justify-center text-base" style="width:${w.toFixed(2)}%;background:${l.bar}" title="${h(l.name)}">${w >= 10 ? l.icon : ''}</div>`;
+      }).join('');
+      return `
+      <div class="mt-7 text-left" aria-hidden="true">
+        <div class="relative pt-10">
+          <div class="gauge-marker absolute top-0 flex flex-col items-center" style="left:${(pos * 100).toFixed(2)}%">
+            <span class="whitespace-nowrap rounded-full bg-slate-900 px-2.5 py-0.5 text-sm font-bold text-white">나</span>
+            <span class="text-base leading-none text-slate-900">▼</span>
+          </div>
+          <div class="flex h-8 overflow-hidden rounded-full bg-slate-100 shadow-inner">${segs}</div>
+        </div>
+        <div class="mt-2 flex justify-between gap-2 text-sm font-semibold text-slate-500">
+          <span>가장 적게 ${fmtG(r.minTotal)}</span><span>가장 많이 ${fmtG(r.maxTotal)}</span>
+        </div>
+      </div>`;
+    }
+
+    function emojiRow(emoji, n, cap) {
+      if (!n || n <= 0) return '';
+      const k = Math.min(n, cap);
+      const icons = Array.from({ length: k }, () => `<span>${emoji}</span>`).join('');
+      const more = n > cap ? `<span class="ml-1 self-center text-sm font-bold text-slate-400">+${fmtNum(n - cap)}</span>` : '';
+      return `<div class="mt-3 flex flex-wrap gap-0.5 text-lg leading-tight" aria-hidden="true">${icons}${more}</div>`;
+    }
+
+    function convTile(icon, mainHtml, sub, extra) {
+      return `<div class="rounded-2xl bg-slate-50 p-5">
+        <p class="text-4xl" aria-hidden="true">${icon}</p>
+        <p class="mt-2 text-lg font-bold text-slate-800">${mainHtml}</p>
+        <p class="text-base leading-snug text-slate-500">${sub}</p>
+        ${extra || ''}
+      </div>`;
+    }
+
+    function dayRowHtml(it, rank) {
+      const isBest = it.diff <= 0;
+      const valCls = it.choice.co2 === 0 ? 'text-mint-600' : isBest ? 'text-slate-600' : 'text-amber-600';
+      return `
+      <details class="group rounded-2xl bg-slate-50 p-4 transition-all duration-200 open:bg-white open:shadow-md">
+        <summary class="flex cursor-pointer items-center gap-3 rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200">
+          <span class="shrink-0 text-3xl" aria-hidden="true">${h(it.s.emoji)}</span>
+          <span class="min-w-0 flex-1">
+            <span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-slate-400">
+              <span class="tabular">${h(it.s.time)}</span><span>${h(it.s.title)}</span>
+              ${rank ? `<span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-extrabold text-amber-700">TOP ${rank}</span>` : ''}
+            </span>
+            <span class="mt-0.5 block text-base font-bold text-slate-800 sm:text-lg">${h(it.choice.emoji)} ${h(it.choice.label)}</span>
+            ${isBest
+              ? '<span class="mt-0.5 block text-sm font-semibold text-mint-600">👍 가장 적은 선택이에요</span>'
+              : `<span class="mt-0.5 block text-sm font-semibold text-mint-700">바꾸면: ${h(it.best.emoji)} ${h(it.best.label)} <span class="whitespace-nowrap">(−${fmtG(it.diff)})</span></span>`}
+          </span>
+          <span class="tabular shrink-0 text-lg font-black ${valCls}">${fmtG(it.choice.co2)}</span>
+          <span class="shrink-0 text-xl text-slate-300 transition-transform duration-200 group-open:rotate-90" aria-hidden="true">›</span>
+        </summary>
+        <div class="mt-3 rounded-2xl bg-slate-50 p-4 text-base leading-relaxed text-slate-600">
+          <p>💡 ${h(it.s.info)}</p>
+          <p class="mt-2 text-sm text-slate-500">🧮 내 선택: ${h(it.choice.basis)}</p>
+          ${isBest ? '' : `<p class="mt-1 text-sm text-slate-500">🧮 가장 적은 선택: ${h(it.best.basis)}</p>`}
+        </div>
+      </details>`;
+    }
+
+    // ----- 결과 화면 -----
+    function renderResult(r) {
+      const name = state.nickname ? h(state.nickname) : '나';
+      const isChallenge = state.round === 2;
+      const parts = [];
+
+      // 1) 오늘의 발자국
+      parts.push(`
+      <section class="rounded-2xl ${r.level.bg} p-6 text-center shadow-sm sm:p-8" aria-label="오늘의 발자국">
+        ${isChallenge ? '<p class="mb-1 text-base font-extrabold text-amber-700">🏆 도전 모드 결과</p>' : ''}
+        <h2 class="text-xl font-black text-slate-800 sm:text-2xl">${name}의 오늘 탄소 발자국</h2>
+        <div class="mt-4 flex items-end justify-center gap-1">
+          <span id="hero-total" class="tabular text-6xl font-black tracking-tight text-slate-900 sm:text-7xl">0</span>
+          <span class="mb-2 text-3xl font-extrabold text-slate-600">g</span>
+        </div>
+        ${r.total >= 1000 ? `<p class="text-lg font-bold text-slate-500">약 ${(r.total / 1000).toFixed(1)}kg</p>` : ''}
+        <div class="pop-in mt-5 inline-flex items-center gap-3 rounded-2xl bg-white/90 px-5 py-3 shadow-sm">
+          <span class="text-4xl" aria-hidden="true">${r.level.icon}</span>
+          <span class="text-left">
+            <span class="block text-xl font-black ${r.level.text}">${h(r.level.name)}</span>
+            <span class="block text-sm font-semibold text-slate-400">${r.levelIdx + 1}단계 / ${LEVELS.length}단계</span>
+          </span>
+          <span class="text-4xl" aria-hidden="true">${r.level.earth}</span>
+        </div>
+        <p class="mt-4 text-lg font-semibold text-slate-700">${h(r.level.msg)}</p>
+        ${gaugeHtml(r)}
+      </section>`);
+
+      // 2) 도전 모드 비교
+      if (isChallenge && state.round1) {
+        const a = state.round1.total;
+        const b = r.total;
+        const d = a - b;
+        const mx = Math.max(a, b, 1);
+        const bar = (label, v, color) => `
+          <div>
+            <div class="flex justify-between gap-2 text-base font-bold text-slate-600"><span>${label}</span><span class="tabular">${fmtG(v)}</span></div>
+            <div class="mt-1 h-6 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full" style="width:${((v / mx) * 100).toFixed(1)}%;background:${color}"></div></div>
+          </div>`;
+        const msg = d >= 1 ? `${fmtG(d)}이나 줄였어요! 🎉` : Math.abs(d) < 1 ? '처음과 똑같아요. 다른 선택도 살펴볼까요?' : `처음보다 ${fmtG(-d)} 늘었어요. 다시 도전해 볼까요?`;
+        parts.push(`
+        <section class="card">
+          <h3 class="section-title">🏆 처음과 비교하면?</h3>
+          <div class="mt-4 grid gap-3">${bar('처음 (평소의 나)', a, '#FCD34D')}${bar('도전 모드', b, '#10B981')}</div>
+          <p class="mt-4 text-lg font-extrabold ${d >= 1 ? 'text-mint-700' : 'text-slate-600'}">${msg}</p>
+        </section>`);
+      }
+
+      // 3) 눈에 보이게 바꾸기
+      const balloons = Math.round(r.total / FACTORS.balloonG);
+      const trees = Math.ceil(r.total / FACTORS.treeDailyG);
+      const km = r.total / FACTORS.carGPerKm;
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">👀 눈에 보이게 바꾸면?</h3>
+        <div class="mt-5 grid gap-3 sm:grid-cols-3">
+          ${convTile('🎈', `풍선 <b class="tabular text-2xl text-mint-700">${fmtNum(balloons)}</b>개`, '이산화탄소를 풍선에 담으면 이만큼!', emojiRow('🎈', balloons, 24))}
+          ${convTile('🌳', `상수리나무 <b class="tabular text-2xl text-mint-700">${fmtNum(trees)}</b>그루`, '하루 동안 모두 빨아들이려면 필요한 나무', emojiRow('🌳', trees, 24))}
+          ${convTile('🚗', `자동차 <b class="tabular text-2xl text-mint-700">${km.toFixed(1)}</b>km`, '승용차가 이만큼 달린 것과 같아요', '')}
+        </div>
+        <details class="mt-4 rounded-2xl bg-slate-50 p-4">
+          <summary class="cursor-pointer rounded-2xl text-base font-bold text-slate-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200">🧮 어떻게 계산했나요?</summary>
+          <p class="mt-2 text-base leading-relaxed text-slate-600">지름 30cm 풍선 1개에는 이산화탄소가 약 ${FACTORS.balloonG}g 담겨요. 상수리나무(30년생) 1그루는 1년에 약 ${FACTORS.treeYearKg}kg, 하루에 약 ${FACTORS.treeDailyG}g을 빨아들여요. 도심에서 승용차가 1km를 달리면 약 ${FACTORS.carGPerKm}g이 나와요.</p>
+        </details>
+      </section>`);
+
+      // 4) 딱 한 가지만 바꾼다면?
+      if (r.bestOne) {
+        const bo = r.bestOne;
+        const newLevel = levelOf(r.total - bo.diff);
+        const up = LEVELS.indexOf(newLevel) < r.levelIdx;
+        parts.push(`
+        <section class="rounded-2xl bg-mint-500 p-6 text-white shadow-md sm:p-8">
+          <h3 class="text-xl font-black sm:text-2xl">✨ 딱 한 가지만 바꾼다면?</h3>
+          <div class="mt-4 rounded-2xl bg-white/15 p-5">
+            <p class="text-base font-bold text-mint-50">${h(bo.s.emoji)} ${h(bo.s.time)} ${h(bo.s.title)}</p>
+            <p class="mt-2 text-lg text-white/80 line-through decoration-2">${h(bo.choice.emoji)} ${h(bo.choice.label)}</p>
+            <p class="mt-1 text-xl font-black">${h(bo.best.emoji)} ${h(bo.best.label)}</p>
+          </div>
+          <p class="mt-4 text-lg font-semibold">이것만 바꿔도 <b class="text-2xl">${fmtG(bo.diff)}</b> 줄어요${up ? `. 그러면 <b>${newLevel.icon} ${h(newLevel.name)}</b>!` : '!'}</p>
+        </section>`);
+      } else {
+        parts.push(`
+        <section class="rounded-2xl bg-mint-500 p-6 text-center text-white shadow-md sm:p-8">
+          <p class="text-5xl" aria-hidden="true">🏅</p>
+          <h3 class="mt-2 text-xl font-black sm:text-2xl">모든 선택이 가장 적은 쪽이에요!</h3>
+          <p class="mt-1 text-lg">더 줄일 발자국이 없어요. 친구에게 비법을 알려 주세요 🌱</p>
+        </section>`);
+      }
+
+      // 5) 나의 하루 돌아보기
+      const rankMap = new Map(r.top3.map((it, k) => [it.idx, k + 1]));
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">🗓️ 나의 하루 돌아보기</h3>
+        <p class="mt-1 text-base text-slate-500">눌러 보면 이유와 계산식이 나와요. <b class="text-amber-700">TOP</b>은 바꾸면 효과가 큰 선택이에요.</p>
+        <div class="mt-4 grid gap-2">${r.items.map((it) => dayRowHtml(it, rankMap.get(it.idx))).join('')}</div>
+      </section>`);
+
+      // 6) 분야별 발자국
+      const catEntries = Object.keys(CATEGORIES).map((k) => [k, r.byCat[k] || 0]);
+      const catMax = Math.max(1, ...catEntries.map((e) => e[1]));
+      const topCat = catEntries.slice().sort((a, b) => b[1] - a[1])[0];
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">📊 분야별 발자국</h3>
+        <p class="mt-1 text-base text-slate-500">가장 큰 분야는 <b class="text-slate-700">${CATEGORIES[topCat[0]].emoji} ${josa(h(CATEGORIES[topCat[0]].name), '이에요', '예요')}</b></p>
+        <div class="mt-5 grid gap-3">
+          ${catEntries.map(([k, v]) => `
+            <div class="flex items-center gap-3">
+              <span class="w-24 shrink-0 text-base font-bold text-slate-700">${CATEGORIES[k].emoji} ${h(CATEGORIES[k].name)}</span>
+              <div class="h-6 flex-1 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full" style="width:${((v / catMax) * 100).toFixed(1)}%;background:${CATEGORIES[k].color}"></div></div>
+              <span class="tabular w-20 shrink-0 text-right text-base font-extrabold text-slate-700">${fmtG(v)}</span>
+            </div>`).join('')}
+        </div>
+      </section>`);
+
+      // 7) 오늘 쓴 물
+      const save = r.waterUsed - r.waterMin;
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">💧 오늘 쓴 물</h3>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div class="rounded-2xl bg-slate-50 p-5">
+            <p class="text-base text-slate-500">양치와 샤워에 쓴 물</p>
+            <p class="tabular mt-1 text-3xl font-black text-slate-800">${fmtNum(r.waterUsed)}L</p>
+            <p class="text-base text-slate-500">500mL 생수병 ${fmtNum(r.waterUsed * 2)}개만큼</p>
+          </div>
+          <div class="rounded-2xl ${save > 0 ? 'bg-mint-50' : 'bg-slate-50'} p-5">
+            ${save > 0
+              ? `<p class="text-base text-mint-700">더 아낄 수 있었던 물</p>
+                 <p class="tabular mt-1 text-3xl font-black text-mint-700">${fmtNum(save)}L</p>
+                 <p class="text-base text-mint-700">생수병 ${fmtNum(save * 2)}개!</p>
+                 ${emojiRow('💧', save * 2, 30)}`
+              : '<p class="text-4xl" aria-hidden="true">👏</p><p class="mt-1 text-lg font-bold text-slate-700">물을 아주 알뜰하게 썼어요!</p>'}
+          </div>
+        </div>
+        <p class="mt-3 text-sm text-slate-400">양치 물은 탄소로 따지면 2g 차이지만, 물로는 5L나 차이가 나요.</p>
+      </section>`);
+
+      // 8) 우리 반이 1년 동안 함께하면?
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">🏫 우리 반이 1년 동안 함께하면?</h3>
+        <p class="mt-1 text-base text-slate-500">내가 더 줄일 수 있었던 양을 우리 반 모두가 1년 동안 줄인다면?</p>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <label for="input-students" class="text-lg font-bold text-slate-700">우리 반 학생 수</label>
+          <div class="flex items-center gap-2">
+            <button type="button" data-action="stu-minus" class="h-12 w-12 rounded-2xl bg-slate-100 text-2xl font-black text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-200 active:scale-95" aria-label="한 명 줄이기">−</button>
+            <input id="input-students" type="number" inputmode="numeric" min="1" max="${FACTORS.maxStudents}" value="${state.students}" class="tabular h-12 w-20 rounded-2xl bg-slate-100 text-center text-xl font-black outline-none focus:bg-white focus:ring-2 focus:ring-mint-500" />
+            <button type="button" data-action="stu-plus" class="h-12 w-12 rounded-2xl bg-slate-100 text-2xl font-black text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-200 active:scale-95" aria-label="한 명 늘리기">+</button>
+            <span class="text-lg font-bold text-slate-700">명</span>
+          </div>
+        </div>
+        <div id="class-output" class="mt-4"></div>
+      </section>`);
+
+      // 9) 생각해 보기
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">🤔 생각해 보기</h3>
+        <div class="mt-4 grid gap-3">
+          <p class="rounded-2xl bg-slate-50 p-4 text-lg leading-relaxed"><b class="text-mint-700">Q1.</b> 오늘 선택 중 나 혼자 바꿀 수 있는 것과, 가족이나 학교가 함께 바꿔야 하는 것은 무엇일까요?</p>
+          <p class="rounded-2xl bg-slate-50 p-4 text-lg leading-relaxed"><b class="text-mint-700">Q2.</b> 양치컵처럼 숫자가 작은 습관도 매일 이어지면 의미가 있을까요?</p>
+        </div>
+      </section>`);
+
+      // 10) 패들렛에 공유하기
+      const padlet = /^https?:\/\//.test(FACTORS.padletUrl || '') ? FACTORS.padletUrl : '';
+      parts.push(`
+      <section class="card">
+        <h3 class="section-title">📮 패들렛에 공유하기</h3>
+        <p class="mt-1 text-base text-slate-500">버튼을 누르면 내 결과가 글로 복사돼요. 패들렛 글쓰기 칸에 붙여 넣으세요.</p>
+        <div class="mt-4 grid gap-3 ${padlet ? 'sm:grid-cols-2' : ''}">
+          <button type="button" data-action="copy" class="btn-primary w-full text-lg">📋 결과 복사하기</button>
+          ${padlet ? `<a href="${h(padlet)}" target="_blank" rel="noopener" class="btn-soft w-full">🧷 우리 반 패들렛 열기</a>` : ''}
+        </div>
+        <details id="share-preview" class="mt-4 rounded-2xl bg-slate-50 p-4">
+          <summary class="cursor-pointer rounded-2xl text-base font-bold text-slate-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200">👀 복사될 글 미리 보기</summary>
+          <textarea id="share-text" readonly rows="12" class="mt-3 w-full resize-y rounded-2xl bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm outline-none focus:ring-2 focus:ring-mint-500"></textarea>
+        </details>
+      </section>`);
+
+      // 11) 버튼
+      parts.push(`
+      <div class="grid gap-3 sm:grid-cols-3">
+        <button type="button" data-action="pledge" class="btn-primary w-full text-lg">📝 내일의 다짐 만들기</button>
+        <button type="button" data-action="challenge" class="btn-soft w-full">🏆 ${isChallenge ? '다시 도전하기' : '탄소 줄이기 도전'}</button>
+        <button type="button" data-action="restart" class="btn-soft w-full">🔄 처음부터 다시</button>
+      </div>
+      <p class="text-center text-sm text-slate-400">숫자는 공개 자료를 바탕으로 한 교육용 어림값이에요.
+        <button type="button" data-action="teacher" class="rounded-lg font-bold text-slate-500 underline-offset-2 transition-colors duration-200 hover:text-mint-700 hover:underline">계산 근거 보기</button>
+      </p>`);
+
+      $('#result-root').innerHTML = parts.join('');
+      updateClassOutput();
+      updateSharePreview();
+    }
+
+    function updateClassOutput() {
+      const out = $('#class-output');
+      const r = state.lastResult;
+      if (!out || !r) return;
+      const per = Math.round(Math.max(0, r.total - r.minTotal));
+      const n = state.students;
+      if (per < 1) {
+        out.innerHTML = `
+          <div class="rounded-2xl bg-mint-50 p-5 text-center">
+            <p class="text-4xl" aria-hidden="true">🌏</p>
+            <p class="mt-2 text-lg font-bold text-mint-800">이미 가장 적은 하루예요!</p>
+            <p class="text-base text-mint-700">우리 반 ${fmtNum(n)}명이 모두 오늘처럼 지내면 지구가 정말 고마워할 거예요.</p>
+          </div>`;
+        return;
+      }
+      const yearG = per * n * 365;
+      const kg = yearG / 1000;
+      const trees = Math.round(kg / FACTORS.treeYearKg);
+      out.innerHTML = `
+        <div class="rounded-2xl bg-mint-50 p-5">
+          <p class="text-base font-semibold text-mint-800">더 줄일 수 있었던 양 × 학생 수 × 365일</p>
+          <p class="tabular mt-1 text-lg font-bold text-slate-700">${fmtNum(per)}g × ${fmtNum(n)}명 × 365일 = ${fmtNum(yearG)}g</p>
+          <p class="mt-3 text-3xl font-black text-mint-700 sm:text-4xl">약 ${fmtBig(kg)}</p>
+          <p class="mt-2 text-lg text-slate-700">🌳 상수리나무 <b class="text-mint-700">${fmtNum(trees)}그루</b>가 1년 동안 빨아들이는 양이에요!</p>
+        </div>`;
+    }
+
+    function setStudents(v) {
+      state.students = clamp(Number.isFinite(v) ? Math.round(v) : FACTORS.defaultStudents, 1, FACTORS.maxStudents);
+      const inp = $('#input-students');
+      if (inp) inp.value = state.students;
+      updateClassOutput();
+    }
+
+    // ----- 내일의 다짐 -----
+    function openPledge() {
+      const src = state.round1 || state.lastResult;
+      if (!src) return;
+      const options = src.items
+        .filter((it) => it.diff > 0)
+        .sort((a, b) => b.diff - a.diff)
+        .slice(0, 3)
+        .map((it) => ({ emoji: it.best.emoji, title: it.s.title, label: it.best.label, diff: it.diff }));
+      if (options.length === 0) options.push({ emoji: '🌏', title: '오늘처럼', label: '지구를 지키는 선택을 이어 간다', diff: 0 });
+      state.pledgeOptions = options;
+      state.pledgeSelected = null;
+
+      $('#pledge-options').innerHTML = options.map((o, i) => `
+        <button type="button" data-p="${i}" aria-pressed="false" class="flex w-full items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-mint-200">
+          <span class="shrink-0 text-3xl" aria-hidden="true">${h(o.emoji)}</span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-bold text-slate-400">${h(o.title)}</span>
+            <span class="block text-lg font-bold leading-snug text-slate-800">${h(o.label)}</span>
+          </span>
+          ${o.diff > 0 ? `<span class="tabular shrink-0 rounded-full bg-mint-50 px-3 py-1 text-base font-extrabold text-mint-700">−${fmtG(o.diff)}</span>` : ''}
+        </button>`).join('');
+
+      $('#input-pledge').value = '';
+      $('#btn-make-card').disabled = true;
+      showPledgeStep(1);
+      openModal('modal-pledge');
+      if (options.length === 1) selectPledge(0);
+    }
+
+    function selectPledge(i) {
+      state.pledgeSelected = i;
+      document.querySelectorAll('#pledge-options [data-p]').forEach((b) => {
+        const on = Number(b.dataset.p) === i;
+        b.classList.toggle('ring-2', on);
+        b.classList.toggle('ring-mint-500', on);
+        b.classList.toggle('bg-mint-50', on);
+        b.classList.toggle('bg-white', !on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+      $('#btn-make-card').disabled = false;
+    }
+
+    function showPledgeStep(n) {
+      $('#pledge-step1').classList.toggle('hidden', n !== 1);
+      $('#pledge-step2').classList.toggle('hidden', n !== 2);
+      const panel = $('#modal-pledge .modal-panel');
+      if (panel) panel.scrollTop = 0;
+    }
+
+    function makePledgeCard() {
+      const o = state.pledgeOptions[state.pledgeSelected];
+      if (!o) return;
+      const src = state.round1 || state.lastResult;
+      const level = levelOf(src.total);
+      const name = state.nickname ? h(state.nickname) : '나';
+      const d = new Date();
+      const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+      const text = $('#input-pledge').value.trim();
+      const trees = Math.ceil(o.diff / FACTORS.treeDailyG);
+      state.pledge = { emoji: o.emoji, title: o.title, label: o.label, diff: o.diff, text };
+      $('#pledge-card').innerHTML = `
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-mint-100 via-white to-lime-100 p-6 text-center shadow-md">
+          <span class="pointer-events-none absolute -right-2 -top-3 rotate-12 text-6xl opacity-20" aria-hidden="true">👣</span>
+          <span class="pointer-events-none absolute -bottom-4 -left-1 -rotate-12 text-6xl opacity-20" aria-hidden="true">👣</span>
+          <p class="text-base font-extrabold text-mint-700">👣 내일의 탄소 다짐 카드</p>
+          <p class="mt-2 text-2xl font-black text-slate-900">${name}의 다짐</p>
+          <p class="text-base text-slate-500">${dateStr}</p>
+          <div class="mt-5 rounded-2xl bg-white p-5 shadow-sm">
+            <p class="text-5xl" aria-hidden="true">${h(o.emoji)}</p>
+            <p class="mt-2 text-base font-bold text-slate-400">${h(o.title)}</p>
+            <p class="text-xl font-black leading-snug text-slate-900">${h(o.label)}</p>
+            ${o.diff > 0 ? `<p class="mt-3 text-base leading-relaxed text-slate-600">하루 <b class="text-mint-700">${fmtG(o.diff)}</b> 줄이기<br />🌳 상수리나무 <b>${fmtNum(trees)}그루</b>가 하루 동안 빨아들이는 양이에요</p>` : ''}
+          </div>
+          ${text ? `<p class="mt-5 text-xl font-extrabold leading-snug text-slate-800">“${h(text)}”</p>` : ''}
+          <p class="mt-5 inline-flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/80 px-4 py-2 text-base font-semibold text-slate-600 shadow-sm">오늘의 발자국: ${level.icon} ${h(level.name)} (${fmtG(src.total)})</p>
+        </div>`;
+      showPledgeStep(2);
+      updateSharePreview();
+      burstConfetti(['🌱', '✨', '💚']);
+    }
+
+    // ----- 패들렛 공유: 결과를 글로 복사 -----
+    function buildShareText() {
+      const r1 = state.round1 || state.lastResult;
+      if (!r1) return '';
+      const d = new Date();
+      const topCat = Object.keys(CATEGORIES).map((k) => [k, r1.byCat[k] || 0]).sort((a, b) => b[1] - a[1])[0];
+      const lines = [
+        `👣 ${state.nickname || '나'}의 오늘 탄소 발자국`,
+        `📅 ${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`,
+        '',
+        `🌍 나의 탄소 발자국: ${fmtG(r1.total)}`,
+        `${r1.level.icon} ${r1.level.name} (${LEVELS.length}단계 중 ${r1.levelIdx + 1}단계)`,
+        `🎈 풍선 ${fmtNum(Math.round(r1.total / FACTORS.balloonG))}개만큼, 🌳 상수리나무 ${fmtNum(Math.ceil(r1.total / FACTORS.treeDailyG))}그루가 하루 동안 빨아들여야 하는 양`,
+        `📊 가장 큰 분야: ${CATEGORIES[topCat[0]].emoji} ${CATEGORIES[topCat[0]].name} ${fmtG(topCat[1])}`
+      ];
+      const ch = state.round === 2 ? state.lastResult : null;
+      if (ch && ch !== r1) {
+        const saved = r1.total - ch.total;
+        lines.push(`🏆 도전 모드: ${fmtG(ch.total)} (${ch.level.icon} ${ch.level.name})${saved >= 1 ? `, ${fmtG(saved)} 줄였어요!` : ''}`);
+      }
+      lines.push('');
+      if (r1.top3.length) {
+        lines.push('✨ 바꾸면 효과가 큰 선택');
+        r1.top3.forEach((it, i) => lines.push(`${i + 1}. ${it.s.title}: ${it.best.label} (−${fmtG(it.diff)})`));
+      } else {
+        lines.push('✨ 모든 선택이 가장 적은 쪽이었어요!');
+      }
+      if (state.pledge) {
+        lines.push('', `📝 내일의 다짐: [${state.pledge.title}] ${state.pledge.label}`);
+        if (state.pledge.text) lines.push(`"${state.pledge.text}"`);
+      }
+      lines.push('', '🗓️ 나의 하루');
+      r1.items.forEach((it) => lines.push(`${it.s.time} ${it.s.title}: ${it.choice.label} (${fmtG(it.choice.co2)})`));
+      return lines.join('\n');
+    }
+
+    function updateSharePreview() {
+      const ta = $('#share-text');
+      if (ta) ta.value = buildShareText();
+    }
+
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (e) { /* 아래 방법으로 다시 시도 */ }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      return ok;
+    }
+
+    async function copyResult() {
+      const text = buildShareText();
+      if (!text) return;
+      updateSharePreview();
+      const ok = await copyText(text);
+      if (ok) {
+        showToast('✅ 복사했어요! 패들렛 글쓰기 칸에 붙여 넣으세요.');
+        return;
+      }
+      // 자동 복사가 막힌 기기: 미리 보기 글을 펼쳐서 직접 복사하도록 안내
+      if (!$('#modal-pledge').classList.contains('hidden')) closeModal('modal-pledge');
+      const det = $('#share-preview');
+      const ta = $('#share-text');
+      if (det && ta) {
+        det.open = true;
+        det.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+        ta.focus();
+        ta.select();
+      }
+      showToast('자동 복사가 안 돼요. 펼쳐진 글을 길게 눌러 직접 복사해 주세요.');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = $('#toast');
+      $('#toast-text').textContent = msg;
+      t.classList.remove('opacity-0', 'translate-y-4');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-y-4'), 2800);
+    }
+
+    // ----- 모달 -----
+    let lastFocus = null;
+    function openModal(id) {
+      lastFocus = document.activeElement;
+      const m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      const f = m.querySelector('button, input');
+      if (f) f.focus();
+    }
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+      document.body.style.overflow = '';
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    }
+
+    // ----- 꽃가루 -----
+    function burstConfetti(list) {
+      if (reduceMotion) return;
+      const emojis = list || ['🌱', '✨', '🎉', '💚', '🍃'];
+      const layer = $('#confetti');
+      for (let i = 0; i < 22; i++) {
+        const piece = document.createElement('span');
+        piece.className = 'confetti-piece';
+        piece.textContent = emojis[i % emojis.length];
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.fontSize = 18 + Math.random() * 18 + 'px';
+        piece.style.animationDelay = Math.random() * 0.4 + 's';
+        piece.style.setProperty('--drift', (Math.random() - 0.5) * 160 + 'px');
+        piece.style.setProperty('--spin', (Math.random() - 0.5) * 720 + 'deg');
+        layer.appendChild(piece);
+        setTimeout(() => piece.remove(), 2900);
+      }
+    }
+
+    // ----- 다시 하기 -----
+    function startChallenge() { beginRound(2); }
+
+    function restartAll() {
+      if (!window.confirm('처음부터 다시 할까요?\n지금 결과는 사라져요.')) return;
+      clearTimeout(state.feedbackTimer);
+      Object.assign(state, {
+        nickname: '',
+        index: 0,
+        answers: emptyAnswers(),
+        round: 1,
+        round1: null,
+        lastResult: null,
+        students: FACTORS.defaultStudents,
+        busy: false,
+        pledgeOptions: [],
+        pledgeSelected: null,
+        pledge: null,
+        order: [],
+        feedbackTimer: null
+      });
+      $('#input-nickname').value = '';
+      $('#challenge-banner').classList.add('hidden');
+      $('#challenge-banner').classList.remove('flex');
+      showScreen('start');
+    }
+
+    // ----- 이벤트 연결 -----
+    function init() {
+      if (ttsSupported) {
+        $('#btn-tts').classList.remove('hidden');
+        const tip = $('#intro-tts-tip');
+        tip.classList.remove('hidden');
+        tip.classList.add('flex');
+        try { window.speechSynthesis.getVoices(); } catch (e) { /* 무시 */ }
+      }
+      $('#t-min').textContent = fmtG(MIN_TOTAL);
+      $('#t-max').textContent = fmtG(MAX_TOTAL);
+
+      $('#btn-start').addEventListener('click', () => {
+        state.nickname = $('#input-nickname').value.trim().slice(0, 10);
+        showScreen('intro');
+      });
+      $('#input-nickname').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btn-start').click(); });
+      $('#btn-begin').addEventListener('click', () => beginRound(1));
+      $('#btn-prev').addEventListener('click', goPrev);
+      $('#btn-next').addEventListener('click', goNext);
+      // 결과 복사 버튼 (결과 화면, 다짐 카드 모두)
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="copy"]')) copyResult();
+      });
+      $('#choices').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-idx]');
+        if (b && !b.disabled) choose(Number(b.dataset.idx));
+      });
+      $('#btn-tts').addEventListener('click', () => {
+        const s = SITUATIONS[state.index];
+        const order = state.order[state.index] || s.choices.map((_, i) => i);
+        const choicesText = order.map((dataIdx, pos) => `${pos + 1}번. ${s.choices[dataIdx].label}.`).join(' ');
+        speak(`${timeToSpeech(s.time)}. ${s.title}. ${situationText(s)} ${choicesText}`);
+      });
+      $('#btn-sound').addEventListener('click', () => {
+        state.soundOn = !state.soundOn;
+        if (state.soundOn) { ensureAudio(); sfx('pop'); }
+        updateSoundBtn();
+      });
+      $('#btn-teacher').addEventListener('click', () => openModal('modal-teacher'));
+
+      // 결과 화면 버튼 (화면이 다시 그려져도 동작하도록 위임)
+      $('#result-root').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const a = btn.dataset.action;
+        if (a === 'stu-minus') setStudents(state.students - 1);
+        else if (a === 'stu-plus') setStudents(state.students + 1);
+        else if (a === 'pledge') openPledge();
+        else if (a === 'challenge') startChallenge();
+        else if (a === 'restart') restartAll();
+        else if (a === 'teacher') openModal('modal-teacher');
+      });
+      $('#result-root').addEventListener('input', (e) => {
+        if (e.target.id !== 'input-students') return;
+        const v = parseInt(e.target.value, 10);
+        if (!Number.isNaN(v)) {
+          state.students = clamp(v, 1, FACTORS.maxStudents);
+          updateClassOutput();
+        }
+      });
+      $('#result-root').addEventListener('change', (e) => {
+        if (e.target.id === 'input-students') setStudents(parseInt(e.target.value, 10));
+      });
+
+      // 다짐 카드
+      $('#pledge-options').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-p]');
+        if (b) selectPledge(Number(b.dataset.p));
+      });
+      $('#btn-make-card').addEventListener('click', makePledgeCard);
+      $('#btn-pledge-back').addEventListener('click', () => showPledgeStep(1));
+
+      // 모달 닫기
+      document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => closeModal(b.dataset.close)));
+      document.querySelectorAll('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); }));
+
+      // 키보드: Esc로 닫기, 숫자 키로 고르기
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.modal').forEach((m) => { if (!m.classList.contains('hidden')) closeModal(m.id); });
+          return;
+        }
+        if (document.querySelector('.modal:not(.hidden)')) return;
+        if ($('#screen-play').classList.contains('hidden')) return;
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+        if (state.busy) {
+          if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            goNext();
+          }
+          return;
+        }
+        const n = parseInt(e.key, 10);
+        const order = state.order[state.index] || [];
+        if (n >= 1 && n <= order.length) {
+          e.preventDefault();
+          choose(order[n - 1]);
+        }
+      });
+
+      updateSoundBtn();
+    }
+
+    init();
+  </script>
+</body>
+</html>

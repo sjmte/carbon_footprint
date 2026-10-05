@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>초등 4학년 하루 탄소 발자국 계산기</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Gaegu (friendly handwriting title) & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans KR"', 'sans-serif'],
+            fun: ['"Gaegu"', 'cursive', 'sans-serif'],
+          },
+          colors: {
+            brandGreen: '#10B981',
+            brandDarkGreen: '#047857',
+            skyBlue: '#0284C7',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .bounce-card {
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .bounce-card:hover {
+      transform: translateY(-4px) scale(1.015);
+    }
+    .bounce-card:active {
+      transform: scale(0.98);
+    }
+    .wiggle {
+      animation: wiggle 2.5s ease-in-out infinite;
+    }
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+    .pop-in {
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between selection:bg-emerald-200">
+
+  <header class="w-full bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl select-none">🌍</span>
+        <h1 class="font-bold text-slate-800 text-base sm:text-lg">
+          <span class="text-emerald-600 font-fun text-xl">오늘의</span> 탄소 발자국 계산기
+        </h1>
+      </div>
+      <!-- Step Badge -->
+      <div id="stepCounterBadge" class="hidden items-center bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow">
+        <span class="text-emerald-400 mr-1" id="stepCounterText">1/6</span>
+        <span>단계</span>
+      </div>
+    </div>
+    <!-- Progress Bar -->
+    <div id="progressBarWrapper" class="hidden w-full bg-slate-200 h-2">
+      <div id="progressBar" class="bg-gradient-to-r from-emerald-400 via-teal-500 to-sky-500 h-full w-0 transition-all duration-500 rounded-r-full"></div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-xl mx-auto px-4 py-6 flex-grow flex items-center justify-center">
+
+    <!-- VIEW 1: INTRO VIEW -->
+    <section id="introView" class="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 text-center transition-all duration-300 pop-in">
+      <div class="w-24 h-24 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center wiggle shadow-inner border border-emerald-100">
+        <span class="text-5xl">🧭</span>
+      </div>
+      <div class="inline-block px-3.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full mb-3 shadow-xs">
+        초등 4학년 에코 탐정단 🔎
+      </div>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2 font-fun tracking-wide">
+        나의 하루는 지구에 어떤 흔적을 남길까?
+      </h2>
+      <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+        아침 세수부터 밤에 잠들 때까지 나의 평소 생활 습관을 솔직하게 골라보세요.<br/>
+        <strong class="text-slate-800 font-bold">어떤 선택이 탄소를 덜 만들지 신중하게 생각해보아요!</strong>
+      </p>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left shadow-xs">
+        <label for="userNameInput" class="block text-xs font-bold text-slate-700 mb-1.5">
+          반 / 이름 (결과표에 적혀요)
+        </label>
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            id="userClassInput" 
+            placeholder="4학년 1반" 
+            class="w-1/3 px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+          />
+          <input 
+            type="text" 
+            id="userNameInput" 
+            placeholder="홍길동" 
+            class="flex-1 px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+          />
+        </div>
+      </div>
+
+      <button 
+        id="startBtn" 
+        class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/25 text-base sm:text-lg transition duration-200 flex items-center justify-center gap-2 cursor-pointer">
+        <span>하루 시작하기! 🚀</span>
+      </button>
+    </section>
+
+    <!-- VIEW 2: QUIZ / QUESTION VIEW -->
+    <section id="quizView" class="hidden w-full flex flex-col gap-4 pop-in">
+      
+      <!-- Stage Info Card -->
+      <div class="flex items-center justify-between bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex items-center gap-2.5">
+          <span id="stageIcon" class="text-2xl p-1.5 bg-slate-50 rounded-xl">🌅</span>
+          <div>
+            <span id="stageBadge" class="text-[11px] font-extrabold text-emerald-600 uppercase tracking-wider block">STEP 1</span>
+            <h3 id="stageTitle" class="text-sm font-bold text-slate-800">아침 기상 & 세안</h3>
+          </div>
+        </div>
+        <div class="text-right bg-slate-50 px-3 py-1 rounded-xl border border-slate-100">
+          <span class="text-[10px] text-slate-400 block font-medium">시간대</span>
+          <span id="stageTime" class="text-xs font-bold text-slate-700">오전 07:20</span>
+        </div>
+      </div>
+
+      <!-- Question Banner -->
+      <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
+        <div class="absolute -right-3 -bottom-4 text-7xl opacity-10 select-none pointer-events-none">🌿</div>
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2">
+          <span>🎯</span>
+          <span id="questionTag">선택의 순간</span>
+        </div>
+        <h2 id="questionPrompt" class="text-base sm:text-lg font-bold leading-snug">
+          아침에 일어나 세수를 하고 이를 닦을 시간! 물을 어떻게 사용할까?
+        </h2>
+      </div>
+
+      <p class="text-xs text-slate-500 text-center font-medium">
+        💡 평소 나의 행동과 가장 비슷한 카드를 하나 골라주세요!
+      </p>
+
+      <!-- Shuffled Options Container (No carbon info before click) -->
+      <div id="optionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <!-- Rendered via JavaScript dynamically with random positions -->
+      </div>
+    </section>
+
+    <!-- MODAL: POST-CHOICE FEEDBACK MODAL (Reveals Carbon Amount) -->
+    <div id="feedbackModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl pop-in" id="feedbackCard">
+        <div id="feedbackIcon" class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl shadow-inner">
+          ✨
+        </div>
+        <h3 id="feedbackTitle" class="text-xl font-bold mb-1 font-fun">
+          내가 선택한 행동 결과
+        </h3>
+        
+        <!-- Newly Revealed Carbon Footprint Badge -->
+        <div id="feedbackBadgeWrapper" class="my-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-black text-sm shadow-xs">
+          <span>👣 탄소 발생량:</span>
+          <span id="feedbackAddedScore" class="text-base font-black">+10g CO₂</span>
+        </div>
+
+        <p id="feedbackText" class="text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl leading-relaxed mb-5 border border-slate-200 text-left">
+          양치컵을 사용하면 물 6리터를 절약할 수 있어요!
+        </p>
+
+        <button 
+          id="nextStageBtn" 
+          class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition duration-150 shadow-md cursor-pointer flex items-center justify-center gap-1.5">
+          <span>다음 상황으로 가기</span>
+          <span>➔</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 3: RESULT VIEW -->
+    <section id="resultView" class="hidden w-full flex flex-col gap-4 pop-in">
+      
+      <!-- Grade Card -->
+      <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-200 text-center relative overflow-hidden">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3 shadow-xs" id="gradeBadge">
+          🌱 초록 에코 히어로
+        </div>
+
+        <div id="resultCharIcon" class="text-6xl mb-2 wiggle select-none">
+          🐻‍‍❄️
+        </div>
+
+        <h2 id="resultUserGreeting" class="text-xs sm:text-sm font-semibold text-slate-500 mb-0.5">
+          홍길동 대원의 하루 탄소 성적표
+        </h2>
+        <h3 id="resultTitle" class="text-2xl font-black text-slate-800 font-fun mb-3">
+          지구를 지키는 초록 히어로!
+        </h3>
+        
+        <!-- Total Carbon Output Highlight -->
+        <div class="bg-slate-900 text-white p-4 rounded-2xl mb-4 shadow-inner">
+          <span class="text-xs text-slate-300 block mb-1">오늘 하루 내가 발생시킨 총 탄소</span>
+          <div class="flex items-baseline justify-center gap-1">
+            <span id="finalCarbonScore" class="text-4xl font-black text-emerald-400">85</span>
+            <span class="text-base font-bold text-slate-200">g CO₂</span>
+          </div>
+        </div>
+
+        <!-- Real-world Conversion Cards (Tree Absorption & Car Driving Distance) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-4">
+          <!-- Tree Absorption Card -->
+          <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">🌲</span>
+              <div>
+                <h5 class="text-xs font-bold text-emerald-900">소나무 흡수량 환산</h5>
+                <span class="text-[10px] text-emerald-700">30년생 소나무 1일 약 18g 흡수</span>
+              </div>
+            </div>
+            <div>
+              <p id="pineTreeEquivalentText" class="text-xs text-slate-700 leading-snug">
+                오늘 배출한 탄소를 지우려면 <strong class="text-emerald-800 font-bold">소나무 5그루</strong>가 하루 종일 열심히 공기를 정화해야 해요!
+              </p>
+            </div>
+          </div>
+
+          <!-- Car Driving Distance Card -->
+          <div class="bg-sky-50 border border-sky-200 rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">🚗</span>
+              <div>
+                <h5 class="text-xs font-bold text-sky-900">승용차 주행거리 환산</h5>
+                <span class="text-[10px] text-sky-700">휘발유 승용차 1km당 약 150g 배출</span>
+              </div>
+            </div>
+            <div>
+              <p id="carDistanceEquivalentText" class="text-xs text-slate-700 leading-snug">
+                일반 승용차가 약 <strong class="text-sky-800 font-bold">570m</strong>를 달렸을 때 뿜어내는 배기가스 양과 같아요!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p id="resultDesc" class="text-xs sm:text-sm text-slate-600 leading-relaxed px-1">
+          대단해요! 일상 속 모든 순간마다 지구를 생각하는 선택을 했군요. 북극곰이 엄지를 척 들었어요!
+        </p>
+      </div>
+
+      <!-- Action History List -->
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+        <h4 class="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
+          <span>📋 나의 하루 6가지 선택 결과</span>
+          <span class="text-xs text-slate-400 font-normal">탄소 배출 상세</span>
+        </h4>
+        <div id="summaryList" class="flex flex-col gap-2.5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Mission Tip -->
+      <div class="bg-amber-50 rounded-3xl p-4 sm:p-5 border border-amber-200">
+        <h4 class="text-xs sm:text-sm font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+          <span>💡</span> 4학년 환경 미션: 내일의 실천 약속
+        </h4>
+        <p id="missionAdvice" class="text-xs text-amber-800 leading-relaxed">
+          내일은 양치할 때 양치컵을 쓰고, 가까운 거리는 자전거나 튼튼한 두 발로 걸어볼까요?
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button 
+          id="copyResultBtn" 
+          class="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold rounded-2xl shadow-md text-sm transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>📋 패들릿 / 클래스룸에 결과 공유하기</span>
+        </button>
+        <button 
+          id="restartBtn" 
+          class="py-3.5 px-6 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-700 font-bold rounded-2xl text-sm transition cursor-pointer">
+          다시 도전 🔄
+        </button>
+      </div>
+
+      <!-- Toast Notification -->
+      <div id="toastMessage" class="hidden text-center bg-slate-900 text-white text-xs py-2.5 px-4 rounded-full mx-auto shadow-lg">
+        결과가 클립보드에 복사되었어요! 학급 게시판에 붙여넣어 보세요. 🚀
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="w-full text-center py-4 text-xs text-slate-400 border-t border-slate-200 bg-white/60">
+    <p>초등학교 4학년을 위한 일상 탄소 발자국 체험 학습 웹 앱</p>
+    <p class="text-[10px] text-slate-400 mt-0.5">국립산림과학원 30년생 소나무 흡수량 & 한국환경공단 탄소배출계수 기준</p>
+  </footer>
+
+  <script>
+    // Scenario Question Database for 4th Graders
+    const SCENARIOS = [
+      {
+        stage: 1,
+        time: "오전 07:20",
+        stageName: "기상 & 양치질",
+        icon: "🌅",
+        question: "아침에 일어나 세수를 하고 이를 닦을 시간! 물을 어떻게 사용할까?",
+        options: [
+          {
+            id: "low",
+            label: "양치컵에 물 받아 헹구기",
+            desc: "양치컵에 물을 받아 헹구고 양치하는 동안 수도꼭지를 꼭 잠가요.",
+            carbon: 10,
+            icon: "🥛",
+            isLowCarbon: true,
+            tip: "양치컵을 쓰면 30초 동안 그냥 흘려보내는 물 약 6L를 절약할 수 있어요! 수돗물을 정수하고 보내는 데도 전력과 탄소가 쓰인답니다."
+          },
+          {
+            id: "high",
+            label: "물 시원하게 계속 틀어두기",
+            desc: "시원하게 수도꼭지를 계속 콸콸 틀어놓은 채 양치와 세수를 해요.",
+            carbon: 100,
+            icon: "🚰",
+            isLowCarbon: false,
+            tip: "물을 그냥 틀어두면 약 6~8리터의 깨끗한 물이 하수구로 버려져 많은 탄소를 유발해요."
+          }
+        ]
+      },
+      {
+        stage: 2,
+        time: "오전 08:00",
+        stageName: "아침 식사",
+        icon: "🍳",
+        question: "등교 전 든든한 아침밥! 오늘 나의 식판(식탁) 모습은 어떨까?",
+        options: [
+          {
+            id: "low",
+            label: "먹을 만큼만 덜어 싹 비우기",
+            desc: "밥과 나물 반찬을 내가 먹을 만큼만 담아 밥알 하나 남김없이 맛있게 먹어요.",
+            carbon: 20,
+            icon: "🥗",
+            isLowCarbon: true,
+            tip: "잔반을 남기지 않으면 음식물 쓰레기를 소각하고 매립할 때 발생하는 온실가스를 크게 줄일 수 있어요."
+          },
+          {
+            id: "high",
+            label: "소시지만 먹고 밥과 국 남기기",
+            desc: "가공 소시지와 고기만 쏙 골라 먹고, 남은 밥과 국은 쓰레기통에 버려요.",
+            carbon: 150,
+            icon: "🥓",
+            isLowCarbon: false,
+            tip: "육류 가공식품은 생산 과정에서 탄소가 많이 나오고, 버려진 음식물 쓰레기는 썩으면서 메탄가스를 방출해요."
+          }
+        ]
+      },
+      {
+        stage: 3,
+        time: "오전 08:35",
+        stageName: "학교 등교",
+        icon: "🎒",
+        question: "아파트 현관을 나와 학교로 출발! 학교까지 어떻게 이동할까?",
+        options: [
+          {
+            id: "low",
+            label: "계단으로 내려가 도란도란 걷기",
+            desc: "아파트 계단을 통통 걸어 내려가서 친구와 함께 이야기하며 걸어가요.",
+            carbon: 0,
+            icon: "👟",
+            isLowCarbon: true,
+            tip: "튼튼한 두 다리는 탄소를 전혀 내뿜지 않는 지구 최고의 친환경 이동수단이에요!"
+          },
+          {
+            id: "high",
+            label: "엘리베이터 타고 부모님 차 타기",
+            desc: "늦잠을 자서 엘리베이터를 타고, 지하주차장에서 부모님 승용차로 교문 앞까지 가요.",
+            carbon: 120,
+            icon: "🚗",
+            isLowCarbon: false,
+            tip: "가까운 거리도 자동차를 타면 휘발유가 연소되면서 공기 중에 이산화탄소와 미세먼지를 배출해요."
+          }
+        ]
+      },
+      {
+        stage: 4,
+        time: "낮 12:40",
+        stageName: "점심 급식",
+        icon: "🍱",
+        question: "신나는 점심시간! 맛있는 급식을 먹고 잔반은 어떻게 처리할까?",
+        options: [
+          {
+            id: "low",
+            label: "빈 그릇 챌린지! 싹 비우기",
+            desc: "좋아하지 않는 채소도 한 입 도전해 보고, 잔반 없는 깨끗한 식판을 만들어요.",
+            carbon: 10,
+            icon: "🥦",
+            isLowCarbon: true,
+            tip: "훌륭해요! 빈 그릇 운동은 지구의 온도를 낮추고 소중한 식량 자원을 아끼는 멋진 실천이에요."
+          },
+          {
+            id: "high",
+            label: "싫어하는 반찬 통째로 버리기",
+            desc: "내가 좋아하는 반찬만 먹고 국과 나물은 잔반통에 그대로 쏟아부어요.",
+            carbon: 140,
+            icon: "🗑️",
+            isLowCarbon: false,
+            tip: "전국 초등학교 급식 잔반을 처리하는 데만 매년 수천 톤의 온실가스가 발생해요."
+          }
+        ]
+      },
+      {
+        stage: 5,
+        time: "오후 03:30",
+        stageName: "방과 후 이동",
+        icon: "🚲",
+        question: "수업 후 아파트 상가 학원이나 놀이터로 갈 때 이동 방법은?",
+        options: [
+          {
+            id: "low",
+            label: "자전거/킥보드 타거나 걸어가기",
+            desc: "바람을 쐬며 자전거를 타거나 친구들과 걸어서 학원 상가까지 가요.",
+            carbon: 0,
+            icon: "🛴",
+            isLowCarbon: true,
+            tip: "자전거는 다리 근육도 키워주고 탄소 배출도 0g인 착한 교통수단이에요!"
+          },
+          {
+            id: "high",
+            label: "가까운 거리도 자동차 태워달라 하기",
+            desc: "걷기 귀찮아서 부모님께 전화해 승용차로 학원 앞까지 태워달라고 졸라요.",
+            carbon: 180,
+            icon: "🚙",
+            isLowCarbon: false,
+            tip: "학원가 주변 정차 자동차들의 공회전 매연은 학생들의 호흡기 건강에도 나쁘고 탄소도 많아요."
+          }
+        ]
+      },
+      {
+        stage: 6,
+        time: "밤 09:30",
+        stageName: "저녁 & 취침",
+        icon: "🌙",
+        question: "숙제를 마치고 잠잘 시간! 내 방의 조명과 전자기기는 어떨까?",
+        options: [
+          {
+            id: "low",
+            label: "멀티탭 끄고 방 불 끈 뒤 자기",
+            desc: "충전기 코드를 뽑고 방 불을 깜깜하게 끈 뒤 포근하게 꿈나라로 가요.",
+            carbon: 15,
+            icon: "🔌",
+            isLowCarbon: true,
+            tip: "플러그를 뽑거나 멀티탭 스위치를 끄면 사용하지 않을 때 몰래 새어 나가는 대기전력을 막을 수 있어요!"
+          },
+          {
+            id: "high",
+            label: "불과 태블릿 화면 켜둔 채 자기",
+            desc: "유튜브 영상을 자동 재생으로 틀어두고 스탠드를 켠 채 스르륵 잠들어요.",
+            carbon: 160,
+            icon: "📺",
+            isLowCarbon: false,
+            tip: "밤새 켜진 화면과 전등은 발전소에서 밤새 석탄을 태우게 만들어 다량의 탄소를 유발해요."
+          }
+        ]
+      }
+    ];
+
+    let currentStepIndex = 0;
+    let totalAccumulatedCarbon = 0;
+    let recordedChoices = [];
+    let studentFullName = "";
+
+    // DOM References
+    const introView = document.getElementById('introView');
+    const quizView = document.getElementById('quizView');
+    const resultView = document.getElementById('resultView');
+    const startBtn = document.getElementById('startBtn');
+    const userClassInput = document.getElementById('userClassInput');
+    const userNameInput = document.getElementById('userNameInput');
+
+    const stepCounterBadge = document.getElementById('stepCounterBadge');
+    const stepCounterText = document.getElementById('stepCounterText');
+    const progressBarWrapper = document.getElementById('progressBarWrapper');
+    const progressBar = document.getElementById('progressBar');
+
+    const stageIcon = document.getElementById('stageIcon');
+    const stageBadge = document.getElementById('stageBadge');
+    const stageTitle = document.getElementById('stageTitle');
+    const stageTime = document.getElementById('stageTime');
+    const questionPrompt = document.getElementById('questionPrompt');
+    const optionsContainer = document.getElementById('optionsContainer');
+
+    // Modal References
+    const feedbackModal = document.getElementById('feedbackModal');
+    const feedbackIcon = document.getElementById('feedbackIcon');
+    const feedbackTitle = document.getElementById('feedbackTitle');
+    const feedbackBadgeWrapper = document.getElementById('feedbackBadgeWrapper');
+    const feedbackAddedScore = document.getElementById('feedbackAddedScore');
+    const feedbackText = document.getElementById('feedbackText');
+    const nextStageBtn = document.getElementById('nextStageBtn');
+
+    // Result References
+    const resultUserGreeting = document.getElementById('resultUserGreeting');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultDesc = document.getElementById('resultDesc');
+    const resultCharIcon = document.getElementById('resultCharIcon');
+    const gradeBadge = document.getElementById('gradeBadge');
+    const finalCarbonScore = document.getElementById('finalCarbonScore');
+    const pineTreeEquivalentText = document.getElementById('pineTreeEquivalentText');
+    const carDistanceEquivalentText = document.getElementById('carDistanceEquivalentText');
+    const summaryList = document.getElementById('summaryList');
+    const missionAdvice = document.getElementById('missionAdvice');
+    const copyResultBtn = document.getElementById('copyResultBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const toastMessage = document.getElementById('toastMessage');
+
+    startBtn.addEventListener('click', () => {
+      const cls = userClassInput.value.trim();
+      const nm = userNameInput.value.trim();
+      studentFullName = nm ? (cls ? `${cls} ${nm}` : nm) : (cls ? `${cls} 환경탐정` : "4학년 환경탐정");
+
+      introView.classList.add('hidden');
+      quizView.classList.remove('hidden');
+      stepCounterBadge.classList.remove('hidden');
+      stepCounterBadge.classList.add('flex');
+      progressBarWrapper.classList.remove('hidden');
+
+      currentStepIndex = 0;
+      totalAccumulatedCarbon = 0;
+      recordedChoices = [];
+
+      renderCurrentQuestion();
+    });
+
+    function renderCurrentQuestion() {
+      const scenario = SCENARIOS[currentStepIndex];
+
+      stageIcon.textContent = scenario.icon;
+      stageBadge.textContent = `STEP ${currentStepIndex + 1}`;
+      stageTitle.textContent = scenario.stageName;
+      stageTime.textContent = scenario.time;
+      questionPrompt.textContent = scenario.question;
+      stepCounterText.textContent = `${currentStepIndex + 1}/${SCENARIOS.length}`;
+
+      // Update progress bar
+      const percent = (currentStepIndex / SCENARIOS.length) * 100;
+      progressBar.style.width = `${percent}%`;
+
+      // Shuffle options randomly so low/high carbon isn't always in the same position
+      const shuffledOptions = [...scenario.options].sort(() => Math.random() - 0.5);
+
+      optionsContainer.innerHTML = '';
+      shuffledOptions.forEach((opt, idx) => {
+        const optionButton = document.createElement('button');
+        optionButton.type = 'button';
+        optionButton.className = 'bounce-card w-full bg-white hover:border-emerald-400 border-2 border-slate-200 rounded-3xl p-5 text-left transition-all shadow-sm flex flex-col justify-between group active:scale-98 cursor-pointer min-h-[160px]';
+
+        // NOTE: Absolute secrecy of carbon amounts prior to user selection!
+        optionButton.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                ${opt.icon}
+              </span>
+              <span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full font-bold border border-slate-200">
+                선택 ${idx === 0 ? 'A' : 'B'}
+              </span>
+            </div>
+            <h4 class="text-base font-bold text-slate-800 mb-1.5 group-hover:text-emerald-600 transition-colors">
+              ${opt.label}
+            </h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              ${opt.desc}
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-400 font-medium">이 행동을 선택하면?</span>
+            <span class="text-emerald-600 font-bold group-hover:translate-x-0.5 transition-transform">선택하기 👉</span>
+          </div>
+        `;
+
+        optionButton.addEventListener('click', () => {
+          handleSelectOption(opt, scenario);
+        });
+
+        optionsContainer.appendChild(optionButton);
+      });
+    }
+
+    function handleSelectOption(chosenOption, scenario) {
+      totalAccumulatedCarbon += chosenOption.carbon;
+
+      recordedChoices.push({
+        step: currentStepIndex + 1,
+        stageName: scenario.stageName,
+        label: chosenOption.label,
+        carbon: chosenOption.carbon,
+        isLowCarbon: chosenOption.isLowCarbon
+      });
+
+      // Populate Modal (Revealing the carbon footprint only now!)
+      if (chosenOption.isLowCarbon) {
+        feedbackIcon.className = "w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl bg-emerald-100 text-emerald-600 shadow-inner";
+        feedbackIcon.textContent = "🌱";
+        feedbackTitle.textContent = "지구를 웃게 하는 착한 선택!";
+        feedbackTitle.className = "text-xl font-bold text-emerald-600 mb-1 font-fun";
+        feedbackBadgeWrapper.className = "my-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-black text-xs sm:text-sm bg-emerald-100 text-emerald-800 border border-emerald-300";
+        feedbackAddedScore.textContent = `+${chosenOption.carbon}g CO₂ (저탄소)`;
+      } else {
+        feedbackIcon.className = "w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl bg-amber-100 text-amber-600 shadow-inner";
+        feedbackIcon.textContent = "💨";
+        feedbackTitle.textContent = "탄소가 조금 많이 나왔어요!";
+        feedbackTitle.className = "text-xl font-bold text-amber-600 mb-1 font-fun";
+        feedbackBadgeWrapper.className = "my-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-black text-xs sm:text-sm bg-amber-100 text-amber-800 border border-amber-300";
+        feedbackAddedScore.textContent = `+${chosenOption.carbon}g CO₂`;
+      }
+
+      feedbackText.textContent = chosenOption.tip;
+      feedbackModal.classList.remove('hidden');
+    }
+
+    nextStageBtn.addEventListener('click', () => {
+      feedbackModal.classList.add('hidden');
+      currentStepIndex++;
+
+      if (currentStepIndex < SCENARIOS.length) {
+        renderCurrentQuestion();
+      } else {
+        progressBar.style.width = '100%';
+        quizView.classList.add('hidden');
+        renderFinalSummaryView();
+      }
+    });
+
+    function renderFinalSummaryView() {
+      resultView.classList.remove('hidden');
+      resultUserGreeting.textContent = `${studentFullName} 대원의 하루 탄소 성적표`;
+      finalCarbonScore.textContent = totalAccumulatedCarbon;
+
+      /*
+        Scientific Conversion Benchmarks:
+        1) 30-year-old Korean Pine Tree (소나무):
+           - Absorbs ~6.6kg CO2 per year
+           - Daily absorption: 6,600g / 365 days ≈ 18.08g CO2/day per tree.
+           - Trees needed = totalAccumulatedCarbon / 18.08 (rounded to 1 decimal place or whole tree)
+
+        2) Average Gasoline Passenger Car (일반 승용차):
+           - Emits approx. 150g CO2 per 1km (0.15g per 1m).
+           - Distance in meters = (totalAccumulatedCarbon / 150) * 1000 = totalAccumulatedCarbon * 6.666m
+      */
+      const dailyTreeRate = 18.08;
+      const treesNeeded = (totalAccumulatedCarbon / dailyTreeRate).toFixed(1);
+
+      const carKm = (totalAccumulatedCarbon / 150).toFixed(2);
+      const carMeters = Math.round((totalAccumulatedCarbon / 150) * 1000);
+
+      // Display formatted car distance (meters if < 1km, else km)
+      let carDistanceDisplay = "";
+      if (carMeters >= 1000) {
+        carDistanceDisplay = `${carKm} km`;
+      } else {
+        carDistanceDisplay = `${carMeters} m`;
+      }
+
+      pineTreeEquivalentText.innerHTML = `오늘 내가 만든 탄소를 지우려면 <strong class="text-emerald-800 font-bold text-sm">소나무 ${treesNeeded}그루</strong>가 하루 온종일 숨 쉬며 일해야 해요!`;
+      carDistanceEquivalentText.innerHTML = `일반 승용차가 약 <strong class="text-sky-800 font-bold text-sm">${carDistanceDisplay}</strong>를 달릴 때 뿜어내는 배기가스와 같아요!`;
+
+      // Grade categorization
+      let grade = "";
+      let desc = "";
+      let icon = "";
+      let advice = "";
+      let badgeHtml = "";
+
+      if (totalAccumulatedCarbon <= 120) {
+        grade = "지구를 지키는 초록 슈퍼히어로! 🏆";
+        desc = "최고예요! 하루 동안 지구의 열을 내리는 멋진 선택을 거의 모두 실천했어요. 북극곰과 숲속 동물들이 감사의 박수를 보냅니다!";
+        icon = "🐻‍❄️";
+        advice = "지금처럼 양치컵 쓰기, 걷기, 사용 후 전원 끄기를 친구들에게도 자랑스럽게 알려주세요!";
+        badgeHtml = `<span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold border border-emerald-300">🌟 1등급: 에코 슈퍼히어로</span>`;
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+        }
+      } else if (totalAccumulatedCarbon <= 450) {
+        grade = "지구의 든든한 초록 친구! 🌿";
+        desc = "좋은 습관들을 여럿 실천하고 있네요! 몇 가지 행동만 조금 더 지구를 배려하는 방향으로 바꾸면 바로 슈퍼히어로가 될 수 있어요.";
+        icon = "🐼";
+        advice = "내일은 아파트 엘리베이터 대신 계단 걷기, 그리고 가까운 거리는 자전거 타기에 도전해 볼까요?";
+        badgeHtml = `<span class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-bold border border-teal-300">🌱 2등급: 자라나는 지구지킴이</span>`;
+      } else {
+        grade = "탄소 발자국 쿵쿵이! ⚠️";
+        desc = "오늘 하루 지구의 열이 조금 올랐어요! 무심코 흘려보낸 물, 남긴 음식, 자동차 타기가 많은 탄소를 만들었답니다. 내일부터 하나씩 줄여볼까요?";
+        icon = "🌍🔥";
+        advice = "우선 가장 쉬운 '양치할 때 컵에 물 받아 쓰기'와 '급식 남기지 않기'부터 딱 1주일간 실천해 보세요!";
+        badgeHtml = `<span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold border border-amber-300">⚠️ 3등급: 관심과 실천이 필요해요</span>`;
+      }
+
+      resultTitle.textContent = grade;
+      resultDesc.textContent = desc;
+      resultCharIcon.textContent = icon;
+      gradeBadge.innerHTML = badgeHtml;
+      missionAdvice.textContent = advice;
+
+      // Populate history list
+      summaryList.innerHTML = "";
+      recordedChoices.forEach(item => {
+        const row = document.createElement('div');
+        row.className = `p-3 rounded-2xl flex items-center justify-between text-xs border ${
+          item.isLowCarbon 
+            ? 'bg-emerald-50/70 border-emerald-200 text-slate-800' 
+            : 'bg-amber-50/70 border-amber-200 text-slate-800'
+        }`;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="text-base">${item.isLowCarbon ? '🌱' : '💨'}</span>
+            <div>
+              <span class="font-bold text-slate-500 text-[10px] block">${item.stageName}</span>
+              <span class="font-semibold text-slate-800">${item.label}</span>
+            </div>
+          </div>
+          <span class="font-black ${item.isLowCarbon ? 'text-emerald-600' : 'text-amber-600'}">
+            +${item.carbon}g
+          </span>
+        `;
+        summaryList.appendChild(row);
+      });
+    }
+
+    copyResultBtn.addEventListener('click', () => {
+      const dailyTreeRate = 18.08;
+      const treesNeeded = (totalAccumulatedCarbon / dailyTreeRate).toFixed(1);
+      const carMeters = Math.round((totalAccumulatedCarbon / 150) * 1000);
+      const carDistText = carMeters >= 1000 ? `${(totalAccumulatedCarbon / 150).toFixed(2)}km` : `${carMeters}m`;
+
+      const historyText = recordedChoices.map(c => `• ${c.stageName}: ${c.label} (+${c.carbon}g)`).join('\n');
+      const shareContent = 
+`[🌏 초등 4학년 나의 하루 탄소 발자국 계산 결과]
+대원: ${studentFullName}
+총 배출량: ${totalAccumulatedCarbon}g CO₂
+결과 등급: ${resultTitle.textContent}
+
+🌲 소나무 환산: 소나무 약 ${treesNeeded}그루가 하루 종일 흡수해야 하는 양
+🚗 승용차 환산: 일반 승용차가 약 ${carDistText} 달릴 때 나오는 매연
+
+[나의 6단계 실천 기록]
+${historyText}
+
+지구를 지키는 작은 실천, 내일부터 함께해요! 🌱`;
+
+      // Safe clipboard copy execution
+      const dummyArea = document.createElement("textarea");
+      dummyArea.value = shareContent;
+      dummyArea.style.position = "fixed";
+      dummyArea.style.left = "-9999px";
+      document.body.appendChild(dummyArea);
+      dummyArea.select();
+
+      try {
+        document.execCommand('copy');
+        showToastAlert("결과 보고서가 복사되었어요! 학급 패들릿에 붙여넣어 보세요 🎉");
+      } catch (err) {
+        showToastAlert("클립보드 복사를 지원하지 않는 환경입니다.");
+      } finally {
+        document.body.removeChild(dummyArea);
+      }
+    });
+
+    function showToastAlert(text) {
+      toastMessage.textContent = text;
+      toastMessage.classList.remove('hidden');
+      setTimeout(() => {
+        toastMessage.classList.add('hidden');
+      }, 3000);
+    }
+
+    restartBtn.addEventListener('click', () => {
+      resultView.classList.add('hidden');
+      introView.classList.remove('hidden');
+      stepCounterBadge.classList.add('hidden');
+      progressBarWrapper.classList.add('hidden');
+      progressBar.style.width = "0%";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
